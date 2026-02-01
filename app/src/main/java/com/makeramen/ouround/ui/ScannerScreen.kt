@@ -3,6 +3,7 @@ package com.makeramen.ouround.ui
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.updateTransition
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.size
@@ -26,7 +27,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
 import com.makeramen.ouround.R
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makeramen.ouround.ble.BleDevice
@@ -44,11 +49,11 @@ fun ScannerScreen(viewModel: BleViewModel) {
         device to (device.getDisplayName() ?: "Oura Ring")
     }
 
-    // Separate Apple devices (with detected type) from other devices
-    val appleDevices = uiState.otherDevices.mapNotNull { device ->
-        device.getDetectedType()?.let { device to it }
-    }
-    val nonAppleDevices = uiState.otherDevices.filter { it.getDetectedType() == null }
+    // Separate Apple devices from other devices
+    val appleDevices = uiState.otherDevices
+        .filter { it.isAppleDevice() }
+        .map { device -> device to device.getDetectedType()!! }
+    val nonAppleDevices = uiState.otherDevices.filter { !it.isAppleDevice() }
 
     // Split non-Apple devices into named and unnamed
     val namedDevices = nonAppleDevices.mapNotNull { device ->
@@ -324,6 +329,7 @@ fun OuraDeviceCard(device: BleDevice, displayName: String, modifier: Modifier = 
                 Text(
                     text = device.address,
                     fontSize = 12.sp,
+                    fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
 
@@ -409,10 +415,13 @@ fun CompactDeviceCard(device: BleDevice, displayName: String, modifier: Modifier
 
                 // MAC Address and Manufacturer on same line or tight
                 Text(
-                    text = if (manufacturerNames.isNotEmpty()) {
-                        "${device.address} · ${manufacturerNames.joinToString()}"
-                    } else {
-                        device.address
+                    text = buildAnnotatedString {
+                        withStyle(SpanStyle(fontFamily = FontFamily.Monospace)) {
+                            append(device.address)
+                        }
+                        if (manufacturerNames.isNotEmpty()) {
+                            append(" · ${manufacturerNames.joinToString()}")
+                        }
                     },
                     fontSize = 9.sp,
                     color = MaterialTheme.colorScheme.onPrimary
@@ -460,19 +469,31 @@ fun UnnamedDeviceCard(device: BleDevice, detectedType: String? = null, modifier:
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Device info: MAC, manufacturer, and detected type (if any)
-            Text(
-                text = buildString {
-                    append(device.address)
+            // Device info: MAC (stable) + manufacturer and detected type (marquee if overflow)
+            Row(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = device.address,
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    maxLines = 1
+                )
+                val suffix = buildString {
                     if (manufacturerNames.isNotEmpty()) {
                         append(" · ${manufacturerNames.joinToString()}")
                     }
                     detectedType?.let { append(" · $it") }
-                },
-                fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.weight(1f)
-            )
+                }
+                if (suffix.isNotEmpty()) {
+                    Text(
+                        text = suffix,
+                        fontSize = 10.sp,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        maxLines = 1,
+                        modifier = Modifier.basicMarquee()
+                    )
+                }
+            }
 
             // Last Seen and RSSI on same row
             Row(

@@ -13,6 +13,21 @@ private val OURA_MANUFACTURER_IDS = setOf(
 // Apple identification constants
 private const val APPLE_MANUFACTURER_ID = 76  // 0x004C
 
+/** Cache of detected types by MAC address for Apple devices */
+object AppleDeviceCache {
+    private val detectedTypes = mutableMapOf<String, String>()
+
+    fun getLastKnown(address: String): String? = detectedTypes[address]
+
+    fun update(address: String, detectedType: String) {
+        detectedTypes[address] = detectedType
+    }
+
+    fun clear() {
+        detectedTypes.clear()
+    }
+}
+
 // Apple Nearby Info action codes (lower nibble of status byte)
 private enum class NearbyActionCode(val code: Int, val label: String) {
     UNKNOWN(0x00, "Unknown"),
@@ -85,8 +100,8 @@ data class BleDevice(
         return AppleContinuityType.fromByte(appleData[0])
     }
 
-    /** Returns true if this is any Apple device (has Apple manufacturer data with known continuity type) */
-    fun isAppleDevice(): Boolean = getAppleContinuityType() != null
+    /** Returns true if this is any Apple device (has Apple manufacturer data) */
+    fun isAppleDevice(): Boolean = manufacturerData.containsKey(APPLE_MANUFACTURER_ID)
 
     /** Returns true if this is specifically an AirTag (Find My with AirTag status bytes) */
     fun isAirTag(): Boolean {
@@ -101,6 +116,27 @@ data class BleDevice(
 
     /** Returns a detected/inferred device type label based on protocol analysis (not broadcast name) */
     fun getDetectedType(): String? {
+        if (!isAppleDevice()) return null
+
+        val currentType = getCurrentDetectedType()
+
+        return if (currentType != null) {
+            // Cache the detected type for this address
+            AppleDeviceCache.update(address, currentType)
+            currentType
+        } else {
+            // Unknown continuity type - show last known if we have it
+            val lastKnown = AppleDeviceCache.getLastKnown(address)
+            if (lastKnown != null) {
+                "Unknown [prev: $lastKnown]"
+            } else {
+                ""
+            }
+        }
+    }
+
+    /** Returns the current detected type without cache lookup */
+    private fun getCurrentDetectedType(): String? {
         if (isAirTag()) {
             val appleData = manufacturerData[APPLE_MANUFACTURER_ID]!!
             val batteryStatus = when (appleData[2]) {
