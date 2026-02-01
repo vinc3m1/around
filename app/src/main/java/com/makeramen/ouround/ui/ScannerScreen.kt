@@ -53,16 +53,24 @@ fun ScannerScreen(viewModel: BleViewModel) {
     val appleDevices = uiState.otherDevices
         .filter { it.isAppleDevice() }
         .map { device -> device to device.getDetectedType()!! }
-    val nonAppleDevices = uiState.otherDevices.filter { !it.isAppleDevice() }
 
-    // Split non-Apple devices into named and unnamed
-    val namedDevices = nonAppleDevices.mapNotNull { device ->
+    // Separate Google devices from remaining
+    val googleDevices = uiState.otherDevices
+        .filter { !it.isAppleDevice() && it.isGoogleDevice() }
+        .map { device -> device to device.getGoogleDetectedType()!! }
+
+    // Remaining non-Apple, non-Google devices
+    val otherDevices = uiState.otherDevices.filter { !it.isAppleDevice() && !it.isGoogleDevice() }
+
+    // Split other devices into named and unnamed
+    val namedDevices = otherDevices.mapNotNull { device ->
         device.getDisplayName()?.let { device to it }
     }
-    val unnamedDevices = nonAppleDevices.filter { it.getDisplayName() == null }
+    val unnamedDevices = otherDevices.filter { it.getDisplayName() == null }
 
     // Collapsible state - collapsed by default
     var appleExpanded by rememberSaveable { mutableStateOf(false) }
+    var googleExpanded by rememberSaveable { mutableStateOf(false) }
     var namedExpanded by rememberSaveable { mutableStateOf(false) }
     var unnamedExpanded by rememberSaveable { mutableStateOf(false) }
 
@@ -206,6 +214,23 @@ fun ScannerScreen(viewModel: BleViewModel) {
 
                 if (appleExpanded) {
                     items(appleDevices, key = { (device, _) -> device.address }) { (device, detectedType) ->
+                        UnnamedDeviceCard(device = device, detectedType = detectedType, modifier = Modifier.animateItem())
+                    }
+                }
+            }
+
+            // Google Devices Section (collapsible)
+            if (googleDevices.isNotEmpty()) {
+                item(key = "google_header") {
+                    CollapsibleHeader(
+                        title = "Google Devices (${googleDevices.size})",
+                        expanded = googleExpanded,
+                        onToggle = { googleExpanded = !googleExpanded }
+                    )
+                }
+
+                if (googleExpanded) {
+                    items(googleDevices, key = { (device, _) -> device.address }) { (device, detectedType) ->
                         UnnamedDeviceCard(device = device, detectedType = detectedType, modifier = Modifier.animateItem())
                     }
                 }

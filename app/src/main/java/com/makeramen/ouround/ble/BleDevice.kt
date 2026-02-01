@@ -13,8 +13,28 @@ private val OURA_MANUFACTURER_IDS = setOf(
 // Apple identification constants
 private const val APPLE_MANUFACTURER_ID = 76  // 0x004C
 
+// Google identification constants
+private const val GOOGLE_MANUFACTURER_ID = 224  // 0x00E0
+private val FAST_PAIR_SERVICE_UUID = ParcelUuid.fromString("0000FE2C-0000-1000-8000-00805F9B34FB")
+private val FMDN_SERVICE_UUID = ParcelUuid.fromString("0000FEAA-0000-1000-8000-00805F9B34FB")
+
 /** Cache of detected types by MAC address for Apple devices */
 object AppleDeviceCache {
+    private val detectedTypes = mutableMapOf<String, String>()
+
+    fun getLastKnown(address: String): String? = detectedTypes[address]
+
+    fun update(address: String, detectedType: String) {
+        detectedTypes[address] = detectedType
+    }
+
+    fun clear() {
+        detectedTypes.clear()
+    }
+}
+
+/** Cache of detected types by MAC address for Google devices */
+object GoogleDeviceCache {
     private val detectedTypes = mutableMapOf<String, String>()
 
     fun getLastKnown(address: String): String? = detectedTypes[address]
@@ -171,5 +191,57 @@ data class BleDevice(
 
     fun getManufacturerNames(): List<String> {
         return manufacturerData.keys.mapNotNull { CompanyDatabase.getCompanyName(it) }
+    }
+
+    // ========== Google Device Detection ==========
+
+    /** Returns true if this is a Google/Android ecosystem device */
+    fun isGoogleDevice(): Boolean {
+        // Check for Google manufacturer ID
+        if (manufacturerData.containsKey(GOOGLE_MANUFACTURER_ID)) return true
+        // Check for Fast Pair service
+        if (serviceUuids.contains(FAST_PAIR_SERVICE_UUID)) return true
+        // Check for FMDN (Find My Device Network) service
+        if (serviceUuids.contains(FMDN_SERVICE_UUID)) return true
+        return false
+    }
+
+    /** Returns a detected type for Google ecosystem devices */
+    fun getGoogleDetectedType(): String? {
+        if (!isGoogleDevice()) return null
+
+        val currentType = getCurrentGoogleDetectedType()
+
+        return if (currentType != null) {
+            GoogleDeviceCache.update(address, currentType)
+            currentType
+        } else {
+            val lastKnown = GoogleDeviceCache.getLastKnown(address)
+            if (lastKnown != null) {
+                "Unknown [prev: $lastKnown]"
+            } else {
+                ""
+            }
+        }
+    }
+
+    private fun getCurrentGoogleDetectedType(): String? {
+        // Check for FMDN tracker first (most specific)
+        if (serviceUuids.contains(FMDN_SERVICE_UUID)) {
+            // Could parse frame type for more detail if we had service data
+            return "Find My Tag"
+        }
+
+        // Check for Fast Pair device
+        if (serviceUuids.contains(FAST_PAIR_SERVICE_UUID)) {
+            return "Fast Pair"
+        }
+
+        // Generic Google device by manufacturer ID
+        if (manufacturerData.containsKey(GOOGLE_MANUFACTURER_ID)) {
+            return "Google Device"
+        }
+
+        return null
     }
 }
