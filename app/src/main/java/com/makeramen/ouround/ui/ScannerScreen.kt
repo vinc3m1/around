@@ -1,11 +1,14 @@
 package com.makeramen.ouround.ui
 
+import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.updateTransition
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -48,7 +51,16 @@ fun ScannerScreen(viewModel: BleViewModel) {
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                ),
+                actions = {
+                    IconButton(onClick = { viewModel.clearDevices() }) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Clear device list",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
             )
         }
     ) { innerPadding ->
@@ -237,11 +249,13 @@ fun RelativeTimeText(
 @Composable
 fun OuraDeviceCard(device: BleDevice, modifier: Modifier = Modifier) {
     val signalStrength = SignalStrength.fromRssi(device.rssi)
+    val transition = updateTransition(targetState = signalStrength, label = "signal_strength")
+    val animatedColor by transition.animateColor(label = "color") { it.color }
 
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = signalStrength.color
+            containerColor = animatedColor
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -322,12 +336,14 @@ fun OuraDeviceCard(device: BleDevice, modifier: Modifier = Modifier) {
 @Composable
 fun CompactDeviceCard(device: BleDevice, modifier: Modifier = Modifier) {
     val signalStrength = SignalStrength.fromRssi(device.rssi)
+    val transition = updateTransition(targetState = signalStrength, label = "signal_strength")
+    val animatedColor by transition.animateColor(label = "color") { it.color }
     val manufacturerNames = device.getManufacturerNames()
 
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = signalStrength.color
+            containerColor = animatedColor
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
@@ -384,12 +400,14 @@ fun CompactDeviceCard(device: BleDevice, modifier: Modifier = Modifier) {
 @Composable
 fun UnnamedDeviceCard(device: BleDevice, modifier: Modifier = Modifier) {
     val signalStrength = SignalStrength.fromRssi(device.rssi)
+    val transition = updateTransition(targetState = signalStrength, label = "signal_strength")
+    val animatedColor by transition.animateColor(label = "color") { it.color }
     val manufacturerNames = device.getManufacturerNames()
 
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = signalStrength.color
+            containerColor = animatedColor
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {

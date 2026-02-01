@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
-private const val STALE_DEVICE_THRESHOLD_MS = 300000L // 5 minutes
 private const val SORT_INTERVAL_MS = 5000L // 5 seconds
 
 data class ScannerUiState(
@@ -58,11 +57,13 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
         scanJob = viewModelScope.launch {
             _uiState.update { it.copy(isScanning = true) }
 
+            // Immediately show cached devices
+            updateDeviceList()
+
             // Launch periodic sort/cleanup task
             launch {
                 while (isActive) {
                     delay(SORT_INTERVAL_MS)
-                    removeStaleDevices()
                     resortDeviceLists()
                     updateDeviceList()
                 }
@@ -94,12 +95,12 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
         scanJob = null
     }
 
-    private fun removeStaleDevices() {
-        val now = System.currentTimeMillis()
-
-        deviceCache.entries.removeIf { (_, device) ->
-            now - device.lastSeen > STALE_DEVICE_THRESHOLD_MS
-        }
+    fun clearDevices() {
+        deviceCache.clear()
+        ouraDeviceHistory.clear()
+        ouraOrder = emptyList()
+        otherOrder = emptyList()
+        _uiState.update { it.copy(ouraDevices = emptyList(), otherDevices = emptyList()) }
     }
 
     private fun resortDeviceLists() {
@@ -118,16 +119,34 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun updateDeviceList() {
         // Build lists using stable order, but with fresh data
-        // Add any new devices not yet in order lists at the end
+        // Insert new devices in sorted position by RSSI
         val currentOuraAddresses = ouraDeviceHistory.keys
         val newOura = currentOuraAddresses - ouraOrder.toSet()
-        val effectiveOuraOrder = ouraOrder.filter { it in currentOuraAddresses } + newOura
+        val effectiveOuraOrder = ouraOrder.filter { it in currentOuraAddresses }.toMutableList()
+        for (address in newOura) {
+            val device = ouraDeviceHistory[address] ?: continue
+            val insertIndex = effectiveOuraOrder.indexOfFirst { addr ->
+                val existing = ouraDeviceHistory[addr]
+                existing != null && existing.rssi < device.rssi
+            }.takeIf { it >= 0 } ?: effectiveOuraOrder.size
+            effectiveOuraOrder.add(insertIndex, address)
+        }
+        ouraOrder = effectiveOuraOrder
 
         val sortedOura = effectiveOuraOrder.mapNotNull { ouraDeviceHistory[it] }
 
         val currentOtherAddresses = deviceCache.keys.filter { !ouraDeviceHistory.containsKey(it) }.toSet()
         val newOthers = currentOtherAddresses - otherOrder.toSet()
-        val effectiveOtherOrder = otherOrder.filter { it in currentOtherAddresses } + newOthers
+        val effectiveOtherOrder = otherOrder.filter { it in currentOtherAddresses }.toMutableList()
+        for (address in newOthers) {
+            val device = deviceCache[address] ?: continue
+            val insertIndex = effectiveOtherOrder.indexOfFirst { addr ->
+                val existing = deviceCache[addr]
+                existing != null && existing.rssi < device.rssi
+            }.takeIf { it >= 0 } ?: effectiveOtherOrder.size
+            effectiveOtherOrder.add(insertIndex, address)
+        }
+        otherOrder = effectiveOtherOrder
 
         val sortedOthers = effectiveOtherOrder.mapNotNull { deviceCache[it] }
 
