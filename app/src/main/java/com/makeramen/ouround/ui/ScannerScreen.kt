@@ -206,12 +206,12 @@ private fun CollapsibleHeader(
 }
 
 private fun formatLastSeen(lastSeen: Long): String {
-    val seconds = (System.currentTimeMillis() - lastSeen) / 1000
+    val totalSeconds = (System.currentTimeMillis() - lastSeen) / 1000
     return when {
-        seconds < 60 -> "${seconds}s ago"
-        seconds < 3600 -> "${seconds / 60}m ago"
-        seconds < 86400 -> "${seconds / 3600}h ago"
-        else -> "${seconds / 86400}d ago"
+        totalSeconds < 60 -> "${totalSeconds}s ago"
+        totalSeconds < 3600 -> "${totalSeconds / 60}m ${totalSeconds % 60}s ago"
+        totalSeconds < 86400 -> "${totalSeconds / 3600}h ${(totalSeconds % 3600) / 60}m ago"
+        else -> "${totalSeconds / 86400}d ${(totalSeconds % 86400) / 3600}h ago"
     }
 }
 
