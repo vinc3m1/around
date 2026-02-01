@@ -1,13 +1,8 @@
 package com.makeramen.ouround.ui
 
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.updateTransition
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.size
@@ -44,9 +39,17 @@ import com.makeramen.ouround.ble.SignalStrength
 fun ScannerScreen(viewModel: BleViewModel) {
     val uiState by viewModel.uiState.collectAsState()
 
-    // Split other devices into named and unnamed
-    val namedDevices = uiState.otherDevices.filter { it.name != null || it.advertisedName != null }
-    val unnamedDevices = uiState.otherDevices.filter { it.name == null && it.advertisedName == null }
+    // Map Oura devices with display name (default to "Oura Ring" if identified without name)
+    val ouraDevices = uiState.ouraDevices.map { device ->
+        device to (device.getDisplayName() ?: "Oura Ring")
+    }
+
+    // Split other devices into named and unnamed (AirTags go in unnamed but still show their name)
+    val namedDevices = uiState.otherDevices.mapNotNull { device ->
+        if (device.isAirTag()) null
+        else device.getDisplayName()?.let { device to it }
+    }
+    val unnamedDevices = uiState.otherDevices.filter { it.getDisplayName() == null || it.isAirTag() }
 
     // Collapsible state - collapsed by default
     var namedExpanded by rememberSaveable { mutableStateOf(false) }
@@ -119,7 +122,7 @@ fun ScannerScreen(viewModel: BleViewModel) {
                         )
                     }
                 }
-            } else if (uiState.isScanning && uiState.ouraDevices.isEmpty() && uiState.otherDevices.isEmpty()) {
+            } else if (uiState.isScanning && ouraDevices.isEmpty() && uiState.otherDevices.isEmpty()) {
                 item(key = "scanning") {
                     Text(
                         text = "Scanning...",
@@ -132,7 +135,7 @@ fun ScannerScreen(viewModel: BleViewModel) {
             // Oura Devices Section Header
             item(key = "oura_header") {
                 Text(
-                    text = "Oura Devices (${uiState.ouraDevices.size})",
+                    text = "Oura Devices (${ouraDevices.size})",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
@@ -141,7 +144,7 @@ fun ScannerScreen(viewModel: BleViewModel) {
             }
 
             // Oura Devices
-            if (uiState.ouraDevices.isEmpty()) {
+            if (ouraDevices.isEmpty()) {
                 item(key = "oura_empty") {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -158,8 +161,8 @@ fun ScannerScreen(viewModel: BleViewModel) {
                     }
                 }
             } else {
-                items(uiState.ouraDevices, key = { it.address }) { device ->
-                    OuraDeviceCard(device = device, modifier = Modifier.animateItem())
+                items(ouraDevices, key = { (device, _) -> device.address }) { (device, displayName) ->
+                    OuraDeviceCard(device = device, displayName = displayName, modifier = Modifier.animateItem())
                 }
             }
 
@@ -173,17 +176,9 @@ fun ScannerScreen(viewModel: BleViewModel) {
                     )
                 }
 
-                item(key = "named_content") {
-                    AnimatedVisibility(
-                        visible = namedExpanded,
-                        enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
-                        exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            namedDevices.forEach { device ->
-                                CompactDeviceCard(device = device)
-                            }
-                        }
+                if (namedExpanded) {
+                    items(namedDevices, key = { (device, _) -> device.address }) { (device, displayName) ->
+                        CompactDeviceCard(device = device, displayName = displayName, modifier = Modifier.animateItem())
                     }
                 }
             }
@@ -198,17 +193,9 @@ fun ScannerScreen(viewModel: BleViewModel) {
                     )
                 }
 
-                item(key = "unnamed_content") {
-                    AnimatedVisibility(
-                        visible = unnamedExpanded,
-                        enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
-                        exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
-                    ) {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            unnamedDevices.forEach { device ->
-                                UnnamedDeviceCard(device = device)
-                            }
-                        }
+                if (unnamedExpanded) {
+                    items(unnamedDevices, key = { it.address }) { device ->
+                        UnnamedDeviceCard(device = device, modifier = Modifier.animateItem())
                     }
                 }
             }
@@ -279,7 +266,7 @@ fun RelativeTimeText(
 }
 
 @Composable
-fun OuraDeviceCard(device: BleDevice, modifier: Modifier = Modifier) {
+fun OuraDeviceCard(device: BleDevice, displayName: String, modifier: Modifier = Modifier) {
     val signalStrength = SignalStrength.fromRssi(device.rssi)
     val transition = updateTransition(targetState = signalStrength, label = "signal_strength")
     val animatedColor by transition.animateColor(label = "color") { it.color }
@@ -304,7 +291,7 @@ fun OuraDeviceCard(device: BleDevice, modifier: Modifier = Modifier) {
             ) {
                 // Device Name
                 Text(
-                    text = device.getDisplayName(),
+                    text = displayName,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimary
@@ -366,7 +353,7 @@ fun OuraDeviceCard(device: BleDevice, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun CompactDeviceCard(device: BleDevice, modifier: Modifier = Modifier) {
+fun CompactDeviceCard(device: BleDevice, displayName: String, modifier: Modifier = Modifier) {
     val signalStrength = SignalStrength.fromRssi(device.rssi)
     val transition = updateTransition(targetState = signalStrength, label = "signal_strength")
     val animatedColor by transition.animateColor(label = "color") { it.color }
@@ -391,7 +378,7 @@ fun CompactDeviceCard(device: BleDevice, modifier: Modifier = Modifier) {
             ) {
                 // Device Name
                 Text(
-                    text = device.getDisplayName(),
+                    text = displayName,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onPrimary
@@ -450,12 +437,14 @@ fun UnnamedDeviceCard(device: BleDevice, modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // MAC and optional manufacturer on same line
+            // Device info: MAC, manufacturer, and display name (if known)
             Text(
-                text = if (manufacturerNames.isNotEmpty()) {
-                    "${device.address} · ${manufacturerNames.joinToString()}"
-                } else {
-                    device.address
+                text = buildString {
+                    append(device.address)
+                    if (manufacturerNames.isNotEmpty()) {
+                        append(" · ${manufacturerNames.joinToString()}")
+                    }
+                    device.getDisplayName()?.let { append(" · $it") }
                 },
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onPrimary,
