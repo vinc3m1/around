@@ -44,14 +44,20 @@ fun ScannerScreen(viewModel: BleViewModel) {
         device to (device.getDisplayName() ?: "Oura Ring")
     }
 
-    // Split other devices into named and unnamed (AirTags go in unnamed but still show their name)
-    val namedDevices = uiState.otherDevices.mapNotNull { device ->
-        if (device.isAirTag()) null
-        else device.getDisplayName()?.let { device to it }
+    // Separate Apple devices (with detected type) from other devices
+    val appleDevices = uiState.otherDevices.mapNotNull { device ->
+        device.getDetectedType()?.let { device to it }
     }
-    val unnamedDevices = uiState.otherDevices.filter { it.getDisplayName() == null || it.isAirTag() }
+    val nonAppleDevices = uiState.otherDevices.filter { it.getDetectedType() == null }
+
+    // Split non-Apple devices into named and unnamed
+    val namedDevices = nonAppleDevices.mapNotNull { device ->
+        device.getDisplayName()?.let { device to it }
+    }
+    val unnamedDevices = nonAppleDevices.filter { it.getDisplayName() == null }
 
     // Collapsible state - collapsed by default
+    var appleExpanded by rememberSaveable { mutableStateOf(false) }
     var namedExpanded by rememberSaveable { mutableStateOf(false) }
     var unnamedExpanded by rememberSaveable { mutableStateOf(false) }
 
@@ -179,6 +185,23 @@ fun ScannerScreen(viewModel: BleViewModel) {
                 if (namedExpanded) {
                     items(namedDevices, key = { (device, _) -> device.address }) { (device, displayName) ->
                         CompactDeviceCard(device = device, displayName = displayName, modifier = Modifier.animateItem())
+                    }
+                }
+            }
+
+            // Apple Devices Section (collapsible)
+            if (appleDevices.isNotEmpty()) {
+                item(key = "apple_header") {
+                    CollapsibleHeader(
+                        title = "Apple Devices (${appleDevices.size})",
+                        expanded = appleExpanded,
+                        onToggle = { appleExpanded = !appleExpanded }
+                    )
+                }
+
+                if (appleExpanded) {
+                    items(appleDevices, key = { (device, _) -> device.address }) { (device, detectedType) ->
+                        UnnamedDeviceCard(device = device, detectedType = detectedType, modifier = Modifier.animateItem())
                     }
                 }
             }
@@ -417,7 +440,7 @@ fun CompactDeviceCard(device: BleDevice, displayName: String, modifier: Modifier
 }
 
 @Composable
-fun UnnamedDeviceCard(device: BleDevice, modifier: Modifier = Modifier) {
+fun UnnamedDeviceCard(device: BleDevice, detectedType: String? = null, modifier: Modifier = Modifier) {
     val signalStrength = SignalStrength.fromRssi(device.rssi)
     val transition = updateTransition(targetState = signalStrength, label = "signal_strength")
     val animatedColor by transition.animateColor(label = "color") { it.color }
@@ -437,14 +460,14 @@ fun UnnamedDeviceCard(device: BleDevice, modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Device info: MAC, manufacturer, and display name (if known)
+            // Device info: MAC, manufacturer, and detected type (if any)
             Text(
                 text = buildString {
                     append(device.address)
                     if (manufacturerNames.isNotEmpty()) {
                         append(" · ${manufacturerNames.joinToString()}")
                     }
-                    device.getDisplayName()?.let { append(" · $it") }
+                    detectedType?.let { append(" · $it") }
                 },
                 fontSize = 10.sp,
                 color = MaterialTheme.colorScheme.onPrimary,
