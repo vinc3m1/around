@@ -13,6 +13,24 @@ private val OURA_MANUFACTURER_IDS = setOf(
 // Apple identification constants
 private const val APPLE_MANUFACTURER_ID = 76  // 0x004C
 
+// Apple Nearby Info action codes (lower nibble of status byte)
+private enum class NearbyActionCode(val code: Int, val label: String) {
+    UNKNOWN(0x00, "Unknown"),
+    DISABLED(0x01, "Disabled"),
+    IDLE(0x03, "Idle"),
+    AUDIO_LOCKED(0x05, "Audio (Locked)"),
+    ACTIVE(0x07, "Active"),
+    VIDEO(0x09, "Video"),
+    WATCH_UNLOCKED(0x0A, "Watch Unlocked"),
+    RECENT_INTERACTION(0x0B, "Recent"),
+    DRIVING(0x0D, "Driving"),
+    CALL(0x0E, "On Call");
+
+    companion object {
+        fun fromCode(code: Int): NearbyActionCode? = entries.find { it.code == code }
+    }
+}
+
 // Apple Continuity protocol type bytes
 enum class AppleContinuityType(val byte: Byte, val label: String) {
     IBEACON(0x02, "iBeacon"),
@@ -83,8 +101,33 @@ data class BleDevice(
 
     /** Returns a detected/inferred device type label based on protocol analysis (not broadcast name) */
     fun getDetectedType(): String? {
-        if (isAirTag()) return "AirTag"
-        return getAppleContinuityType()?.label
+        if (isAirTag()) {
+            val appleData = manufacturerData[APPLE_MANUFACTURER_ID]!!
+            val batteryStatus = when (appleData[2]) {
+                0x10.toByte() -> "Full"
+                0x50.toByte() -> "Medium"
+                0x90.toByte() -> "Low"
+                0xD0.toByte() -> "Very Low"
+                else -> null
+            }
+            return if (batteryStatus != null) "AirTag ($batteryStatus)" else "AirTag"
+        }
+
+        val continuityType = getAppleContinuityType() ?: return null
+
+        // Parse Nearby Info action code for more detail
+        if (continuityType == AppleContinuityType.NEARBY_INFO) {
+            val appleData = manufacturerData[APPLE_MANUFACTURER_ID]!!
+            if (appleData.size >= 3) {
+                val actionCode = (appleData[2].toInt() and 0xFF) and 0x0F  // Lower nibble (handle signed byte)
+                val actionLabel = NearbyActionCode.fromCode(actionCode)?.label
+                if (actionLabel != null) {
+                    return "iPhone/Mac ($actionLabel)"
+                }
+            }
+        }
+
+        return continuityType.label
     }
 
     /** Returns the broadcast display name (advertised or bonded name), not inferred */
