@@ -1,10 +1,16 @@
 package com.makeramen.ouround.ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -23,6 +29,8 @@ import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.res.painterResource
+import com.makeramen.ouround.R
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,6 +56,14 @@ fun ScannerScreen(viewModel: BleViewModel) {
         topBar = {
             TopAppBar(
                 title = { Text("Oura Ring Finder") },
+                navigationIcon = {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_launcher_foreground),
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -157,9 +173,17 @@ fun ScannerScreen(viewModel: BleViewModel) {
                     )
                 }
 
-                if (namedExpanded) {
-                    items(namedDevices, key = { it.address }) { device ->
-                        CompactDeviceCard(device = device, modifier = Modifier.animateItem())
+                item(key = "named_content") {
+                    AnimatedVisibility(
+                        visible = namedExpanded,
+                        enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+                        exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            namedDevices.forEach { device ->
+                                CompactDeviceCard(device = device)
+                            }
+                        }
                     }
                 }
             }
@@ -174,9 +198,17 @@ fun ScannerScreen(viewModel: BleViewModel) {
                     )
                 }
 
-                if (unnamedExpanded) {
-                    items(unnamedDevices, key = { it.address }) { device ->
-                        UnnamedDeviceCard(device = device, modifier = Modifier.animateItem())
+                item(key = "unnamed_content") {
+                    AnimatedVisibility(
+                        visible = unnamedExpanded,
+                        enter = expandVertically(expandFrom = Alignment.Top) + fadeIn(),
+                        exit = shrinkVertically(shrinkTowards = Alignment.Top) + fadeOut()
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            unnamedDevices.forEach { device ->
+                                UnnamedDeviceCard(device = device)
+                            }
+                        }
                     }
                 }
             }
