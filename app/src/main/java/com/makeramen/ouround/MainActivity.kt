@@ -1,47 +1,62 @@
 package com.makeramen.ouround
 
+import android.Manifest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.ViewModelProvider
+import com.makeramen.ouround.ble.BleViewModel
+import com.makeramen.ouround.ui.ScannerScreen
 import com.makeramen.ouround.ui.theme.OuroundTheme
 
 class MainActivity : ComponentActivity() {
+    private lateinit var viewModel: BleViewModel
+
+    private val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.values.all { it }
+        viewModel.setPermissionsGranted(allGranted)
+        if (allGranted) {
+            viewModel.startScanning()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        viewModel = ViewModelProvider(this)[BleViewModel::class.java]
+
         setContent {
             OuroundTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                ScannerScreen(viewModel = viewModel)
             }
         }
+
+        requestPermissions()
     }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+    override fun onStart() {
+        super.onStart()
+        if (viewModel.uiState.value.permissionsGranted) {
+            viewModel.startScanning()
+        }
+    }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    OuroundTheme {
-        Greeting("Android")
+    override fun onStop() {
+        super.onStop()
+        viewModel.stopScanning()
+    }
+
+    private fun requestPermissions() {
+        permissionLauncher.launch(
+            arrayOf(
+                Manifest.permission.BLUETOOTH_SCAN,
+                Manifest.permission.BLUETOOTH_CONNECT
+            )
+        )
     }
 }
