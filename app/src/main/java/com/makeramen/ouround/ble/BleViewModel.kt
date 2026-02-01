@@ -14,7 +14,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 private const val STALE_DEVICE_THRESHOLD_MS = 300000L // 5 minutes
-private const val CLEANUP_INTERVAL_MS = 1000L // 1 second
+private const val SORT_INTERVAL_MS = 5000L // 5 seconds
 
 data class ScannerUiState(
     val isScanning: Boolean = false,
@@ -25,6 +25,10 @@ data class ScannerUiState(
 )
 
 class BleViewModel(application: Application) : AndroidViewModel(application) {
+    init {
+        CompanyDatabase.load(application)
+    }
+
     private val bleScanner = BleScanner(application, viewModelScope)
 
     private val _uiState = MutableStateFlow(ScannerUiState())
@@ -33,6 +37,10 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
     private val deviceCache = mutableMapOf<String, BleDevice>()
     private val ouraDeviceHistory = mutableMapOf<String, BleDevice>()
     private var scanJob: Job? = null
+
+    // Maintains stable ordering - only updated periodically
+    private var ouraOrder: List<String> = emptyList()
+    private var otherOrder: List<String> = emptyList()
 
     fun setPermissionsGranted(granted: Boolean) {
         _uiState.update { it.copy(permissionsGranted = granted) }
@@ -50,11 +58,12 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
         scanJob = viewModelScope.launch {
             _uiState.update { it.copy(isScanning = true) }
 
-            // Launch cleanup task
+            // Launch periodic sort/cleanup task
             launch {
                 while (isActive) {
-                    delay(CLEANUP_INTERVAL_MS)
+                    delay(SORT_INTERVAL_MS)
                     removeStaleDevices()
+                    resortDeviceLists()
                     updateDeviceList()
                 }
             }
@@ -70,6 +79,7 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
                         ouraDeviceHistory[device.address] = device
                     }
 
+                    // Update data without reordering
                     updateDeviceList()
                 }
         }
@@ -92,17 +102,34 @@ class BleViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private fun resortDeviceLists() {
+        // Re-sort Oura devices: active first, then by RSSI
+        ouraOrder = ouraDeviceHistory.values
+            .sortedWith(
+                compareByDescending<BleDevice> { deviceCache.containsKey(it.address) }
+                    .thenByDescending { it.rssi }
+            )
+            .map { it.address }
+
+        // Re-sort other devices by RSSI
+        val others = deviceCache.values.filter { !it.isLikelyOura() }
+        otherOrder = others.sortedByDescending { it.rssi }.map { it.address }
+    }
+
     private fun updateDeviceList() {
-        val (oura, others) = deviceCache.values.partition { it.isLikelyOura() }
+        // Build lists using stable order, but with fresh data
+        // Add any new devices not yet in order lists at the end
+        val currentOuraAddresses = ouraDeviceHistory.keys
+        val newOura = currentOuraAddresses - ouraOrder.toSet()
+        val effectiveOuraOrder = ouraOrder.filter { it in currentOuraAddresses } + newOura
 
-        // Merge current Oura devices with history
-        val allOuraDevices = ouraDeviceHistory.values.toList()
+        val sortedOura = effectiveOuraOrder.mapNotNull { ouraDeviceHistory[it] }
 
-        val sortedOura = allOuraDevices.sortedWith(
-            compareByDescending<BleDevice> { deviceCache.containsKey(it.address) }
-                .thenByDescending { it.rssi }
-        )
-        val sortedOthers = others.sortedByDescending { it.rssi }
+        val currentOtherAddresses = deviceCache.keys.filter { !ouraDeviceHistory.containsKey(it) }.toSet()
+        val newOthers = currentOtherAddresses - otherOrder.toSet()
+        val effectiveOtherOrder = otherOrder.filter { it in currentOtherAddresses } + newOthers
+
+        val sortedOthers = effectiveOtherOrder.mapNotNull { deviceCache[it] }
 
         _uiState.update { it.copy(ouraDevices = sortedOura, otherDevices = sortedOthers) }
     }

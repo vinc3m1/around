@@ -1,8 +1,12 @@
 package com.makeramen.ouround.ui
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -10,21 +14,32 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makeramen.ouround.ble.BleDevice
 import com.makeramen.ouround.ble.BleViewModel
+import com.makeramen.ouround.ble.CompanyDatabase
 import com.makeramen.ouround.ble.SignalStrength
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScannerScreen(viewModel: BleViewModel) {
     val uiState by viewModel.uiState.collectAsState()
+
+    // Split other devices into named and unnamed
+    val namedDevices = uiState.otherDevices.filter { it.name != null || it.advertisedName != null }
+    val unnamedDevices = uiState.otherDevices.filter { it.name == null && it.advertisedName == null }
+
+    // Collapsible state - collapsed by default
+    var namedExpanded by rememberSaveable { mutableStateOf(false) }
+    var unnamedExpanded by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -47,7 +62,7 @@ fun ScannerScreen(viewModel: BleViewModel) {
         ) {
             // Status Messages
             if (!uiState.permissionsGranted) {
-                item {
+                item(key = "permission_error") {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
@@ -62,7 +77,7 @@ fun ScannerScreen(viewModel: BleViewModel) {
                     }
                 }
             } else if (!uiState.bluetoothEnabled) {
-                item {
+                item(key = "bluetooth_error") {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
@@ -77,7 +92,7 @@ fun ScannerScreen(viewModel: BleViewModel) {
                     }
                 }
             } else if (uiState.isScanning && uiState.ouraDevices.isEmpty() && uiState.otherDevices.isEmpty()) {
-                item {
+                item(key = "scanning") {
                     Text(
                         text = "Scanning...",
                         style = MaterialTheme.typography.bodyLarge,
@@ -87,7 +102,7 @@ fun ScannerScreen(viewModel: BleViewModel) {
             }
 
             // Oura Devices Section Header
-            item {
+            item(key = "oura_header") {
                 Text(
                     text = "Oura Devices (${uiState.ouraDevices.size})",
                     style = MaterialTheme.typography.titleLarge,
@@ -99,7 +114,7 @@ fun ScannerScreen(viewModel: BleViewModel) {
 
             // Oura Devices
             if (uiState.ouraDevices.isEmpty()) {
-                item {
+                item(key = "oura_empty") {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
@@ -116,26 +131,77 @@ fun ScannerScreen(viewModel: BleViewModel) {
                 }
             } else {
                 items(uiState.ouraDevices, key = { it.address }) { device ->
-                    OuraDeviceCard(device = device)
+                    OuraDeviceCard(device = device, modifier = Modifier.animateItem())
                 }
             }
 
-            // Other Devices Section
-            if (uiState.otherDevices.isNotEmpty()) {
-                item {
-                    Text(
-                        text = "Other Devices (${uiState.otherDevices.size})",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 16.dp)
+            // Named Devices Section (collapsible)
+            if (namedDevices.isNotEmpty()) {
+                item(key = "named_header") {
+                    CollapsibleHeader(
+                        title = "Named Devices (${namedDevices.size})",
+                        expanded = namedExpanded,
+                        onToggle = { namedExpanded = !namedExpanded }
                     )
                 }
 
-                items(uiState.otherDevices, key = { it.address }) { device ->
-                    CompactDeviceCard(device = device)
+                if (namedExpanded) {
+                    items(namedDevices, key = { it.address }) { device ->
+                        CompactDeviceCard(device = device, modifier = Modifier.animateItem())
+                    }
+                }
+            }
+
+            // Unnamed Devices Section (collapsible)
+            if (unnamedDevices.isNotEmpty()) {
+                item(key = "unnamed_header") {
+                    CollapsibleHeader(
+                        title = "Unnamed Devices (${unnamedDevices.size})",
+                        expanded = unnamedExpanded,
+                        onToggle = { unnamedExpanded = !unnamedExpanded }
+                    )
+                }
+
+                if (unnamedExpanded) {
+                    items(unnamedDevices, key = { it.address }) { device ->
+                        UnnamedDeviceCard(device = device, modifier = Modifier.animateItem())
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CollapsibleHeader(
+    title: String,
+    expanded: Boolean,
+    onToggle: () -> Unit
+) {
+    val rotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        label = "arrow_rotation"
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggle)
+            .padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Icon(
+            imageVector = Icons.Default.KeyboardArrowDown,
+            contentDescription = if (expanded) "Collapse" else "Expand",
+            modifier = Modifier.rotate(rotation),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 
@@ -169,11 +235,11 @@ fun RelativeTimeText(
 }
 
 @Composable
-fun OuraDeviceCard(device: BleDevice) {
+fun OuraDeviceCard(device: BleDevice, modifier: Modifier = Modifier) {
     val signalStrength = SignalStrength.fromRssi(device.rssi)
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = signalStrength.color
         ),
@@ -208,7 +274,10 @@ fun OuraDeviceCard(device: BleDevice) {
                 // Manufacturer IDs (if any)
                 if (device.manufacturerData.isNotEmpty()) {
                     Text(
-                        text = "MFR: ${device.manufacturerData.keys.joinToString { "0x${it.toString(16)}" }}",
+                        text = "MFR: ${device.manufacturerData.keys.joinToString { id ->
+                            val name = CompanyDatabase.getCompanyName(id)
+                            if (name != null) "0x${id.toString(16)} $name" else "0x${id.toString(16)}"
+                        }}",
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
@@ -251,11 +320,12 @@ fun OuraDeviceCard(device: BleDevice) {
 }
 
 @Composable
-fun CompactDeviceCard(device: BleDevice) {
+fun CompactDeviceCard(device: BleDevice, modifier: Modifier = Modifier) {
     val signalStrength = SignalStrength.fromRssi(device.rssi)
+    val manufacturerNames = device.getManufacturerNames()
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = signalStrength.color
         ),
@@ -269,8 +339,7 @@ fun CompactDeviceCard(device: BleDevice) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                modifier = Modifier.weight(1f)
             ) {
                 // Device Name
                 Text(
@@ -280,9 +349,13 @@ fun CompactDeviceCard(device: BleDevice) {
                     color = MaterialTheme.colorScheme.onPrimary
                 )
 
-                // MAC Address
+                // MAC Address and Manufacturer on same line or tight
                 Text(
-                    text = device.address,
+                    text = if (manufacturerNames.isNotEmpty()) {
+                        "${device.address} · ${manufacturerNames.joinToString()}"
+                    } else {
+                        device.address
+                    },
                     fontSize = 9.sp,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
@@ -301,6 +374,58 @@ fun CompactDeviceCard(device: BleDevice) {
                 RelativeTimeText(
                     timestamp = device.lastSeen,
                     fontSize = 9.sp,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun UnnamedDeviceCard(device: BleDevice, modifier: Modifier = Modifier) {
+    val signalStrength = SignalStrength.fromRssi(device.rssi)
+    val manufacturerNames = device.getManufacturerNames()
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = signalStrength.color
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // MAC and optional manufacturer on same line
+            Text(
+                text = if (manufacturerNames.isNotEmpty()) {
+                    "${device.address} · ${manufacturerNames.joinToString()}"
+                } else {
+                    device.address
+                },
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.weight(1f)
+            )
+
+            // Last Seen and RSSI on same row
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RelativeTimeText(
+                    timestamp = device.lastSeen,
+                    fontSize = 9.sp,
+                    color = MaterialTheme.colorScheme.onPrimary
+                )
+                Text(
+                    text = "${device.rssi}",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
             }

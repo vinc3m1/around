@@ -37,4 +37,8 @@ data class BleDevice(
     fun getDisplayName(): String {
         return advertisedName ?: name ?: "Unknown Device"
     }
+
+    fun getManufacturerNames(): List<String> {
+        return manufacturerData.keys.mapNotNull { CompanyDatabase.getCompanyName(it) }
+    }
 }
