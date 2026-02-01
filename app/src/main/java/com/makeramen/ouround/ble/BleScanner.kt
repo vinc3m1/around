@@ -8,7 +8,7 @@ import android.bluetooth.le.ScanCallback
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
-import android.util.Log
+import logcat.logcat
 import android.util.SparseArray
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.awaitClose
@@ -60,7 +60,7 @@ class BleScanner(context: Context, scope: CoroutineScope) {
                 )
 
                 if (device.isLikelyOura()) {
-                    Log.d("BleScanner", "Oura candidate: $device, mfr=${device.manufacturerData.keys}, uuids=${device.serviceUuids}")
+                    logcat { "Oura candidate: $device, mfr=${device.manufacturerData.keys}, uuids=${device.serviceUuids}" }
                 }
                 trySend(device)
             }
@@ -70,7 +70,7 @@ class BleScanner(context: Context, scope: CoroutineScope) {
             }
         }
 
-        Log.d("BleScanner", "Starting scan")
+        logcat { "Starting scan" }
         try {
             bluetoothLeScanner.startScan(null, settings, scanCallback)
         } catch (e: SecurityException) {
@@ -79,7 +79,7 @@ class BleScanner(context: Context, scope: CoroutineScope) {
         }
 
         awaitClose {
-            Log.d("BleScanner", "Stopping scan")
+            logcat { "Stopping scan" }
             try {
                 bluetoothLeScanner.stopScan(scanCallback)
             } catch (e: SecurityException) {
