@@ -16,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,13 +38,19 @@ import androidx.compose.ui.unit.sp
 import com.makeramen.around.ble.BleDevice
 import com.makeramen.around.ble.BleViewModel
 import com.makeramen.around.ble.CompanyDatabase
+import com.makeramen.around.ble.ScannerUiState
 import com.makeramen.around.ble.SignalStrength
+import com.makeramen.around.ui.theme.AroundTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScannerScreen(viewModel: BleViewModel) {
     val uiState by viewModel.uiState.collectAsState()
+    ScannerScreenContent(uiState = uiState, onClearDevices = viewModel::clearDevices)
+}
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ScannerScreenContent(uiState: ScannerUiState, onClearDevices: () -> Unit) {
     // Map Oura devices with display name (default to "Oura Ring" if identified without name)
     val ouraDevices = uiState.ouraDevices.map { device ->
         device to (device.getDisplayName() ?: "Oura Ring")
@@ -96,7 +103,7 @@ fun ScannerScreen(viewModel: BleViewModel) {
                         tooltip = { PlainTooltip { Text("Clear device list") } },
                         state = rememberTooltipState()
                     ) {
-                        IconButton(onClick = { viewModel.clearDevices() }) {
+                        IconButton(onClick = onClearDevices) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
                                 contentDescription = "Clear device list",
@@ -544,5 +551,65 @@ fun UnnamedDeviceCard(device: BleDevice, detectedType: String? = null, modifier:
                 )
             }
         }
+    }
+}
+
+// ========== Previews ==========
+
+@Preview(showBackground = true)
+@Composable
+private fun PreviewScanning() {
+    AroundTheme(dynamicColor = false) {
+        ScannerScreenContent(
+            uiState = ScannerUiState(
+                isScanning = true,
+                permissionsGranted = true,
+                bluetoothEnabled = true
+            ),
+            onClearDevices = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PreviewOuraDevicesFound() {
+    AroundTheme(dynamicColor = false) {
+        ScannerScreenContent(
+            uiState = ScannerUiState(
+                isScanning = true,
+                permissionsGranted = true,
+                bluetoothEnabled = true,
+                ouraDevices = listOf(
+                    BleDevice(
+                        name = null,
+                        address = "A0:38:F8:01:02:03",
+                        rssi = -45,
+                        advertisedName = "Oura_ABCD",
+                        manufacturerData = mapOf(690 to byteArrayOf())
+                    ),
+                    BleDevice(
+                        name = null,
+                        address = "A0:38:F8:04:05:06",
+                        rssi = -72,
+                        manufacturerData = mapOf(772 to byteArrayOf())
+                    )
+                )
+            ),
+            onClearDevices = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun PreviewPermissionsRequired() {
+    AroundTheme(dynamicColor = false) {
+        ScannerScreenContent(
+            uiState = ScannerUiState(
+                permissionsGranted = false
+            ),
+            onClearDevices = {}
+        )
     }
 }
