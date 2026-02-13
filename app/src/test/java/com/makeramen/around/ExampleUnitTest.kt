@@ -1,4 +1,4 @@
-package com.makeramen.ouround
+package com.makeramen.around
 
 import org.junit.Test
 

@@ -1,4 +1,4 @@
-package com.makeramen.ouround
+package com.makeramen.around
 
 import android.Manifest
 import android.os.Bundle
@@ -7,9 +7,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.ViewModelProvider
-import com.makeramen.ouround.ble.BleViewModel
-import com.makeramen.ouround.ui.ScannerScreen
-import com.makeramen.ouround.ui.theme.OuroundTheme
+import com.makeramen.around.ble.BleViewModel
+import com.makeramen.around.ui.ScannerScreen
+import com.makeramen.around.ui.theme.AroundTheme
 
 class MainActivity : ComponentActivity() {
     private lateinit var viewModel: BleViewModel
@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
         viewModel = ViewModelProvider(this)[BleViewModel::class.java]
 
         setContent {
-            OuroundTheme {
+            AroundTheme {
                 ScannerScreen(viewModel = viewModel)
             }
         }

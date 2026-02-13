@@ -1,4 +1,4 @@
-package com.makeramen.ouround.ui.theme
+package com.makeramen.around.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

@@ -4,13 +4,13 @@ plugins {
 }
 
 android {
-    namespace = "com.makeramen.ouround"
+    namespace = "com.makeramen.around"
     compileSdk {
         version = release(36)
     }
 
     defaultConfig {
-        applicationId = "com.makeramen.ouround"
+        applicationId = "com.makeramen.around"
         minSdk = 31
         targetSdk = 36
         versionCode = 1

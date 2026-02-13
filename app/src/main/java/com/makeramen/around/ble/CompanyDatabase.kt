@@ -1,4 +1,4 @@
-package com.makeramen.ouround.ble
+package com.makeramen.around.ble
 
 import android.content.Context
 import android.util.SparseArray

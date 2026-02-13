@@ -1,4 +1,4 @@
-# Ouround
+# Around
 
 Android app for finding Oura rings via BLE scanning.
 
@@ -14,9 +14,9 @@ Android app for finding Oura rings via BLE scanning.
 ## Project Structure
 
 ```
-app/src/main/java/com/makeramen/ouround/
+app/src/main/java/com/makeramen/around/
 ├── MainActivity.kt              # Entry point, permissions handling
-├── OuroundApplication.kt        # Application class
+├── AroundApplication.kt         # Application class
 ├── ble/
 │   ├── BleScanner.kt           # BLE scanning logic
 │   ├── BleViewModel.kt         # UI state management

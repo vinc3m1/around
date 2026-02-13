@@ -1,4 +1,4 @@
-package com.makeramen.ouround.ui
+package com.makeramen.around.ui
 
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.animateFloatAsState
@@ -26,7 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
-import com.makeramen.ouround.R
+import com.makeramen.around.R
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -34,10 +34,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.makeramen.ouround.ble.BleDevice
-import com.makeramen.ouround.ble.BleViewModel
-import com.makeramen.ouround.ble.CompanyDatabase
-import com.makeramen.ouround.ble.SignalStrength
+import com.makeramen.around.ble.BleDevice
+import com.makeramen.around.ble.BleViewModel
+import com.makeramen.around.ble.CompanyDatabase
+import com.makeramen.around.ble.SignalStrength
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,7 +77,7 @@ fun ScannerScreen(viewModel: BleViewModel) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Oura Ring Finder") },
+                title = { Text("Around") },
                 navigationIcon = {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_launcher_foreground),
@@ -91,12 +91,18 @@ fun ScannerScreen(viewModel: BleViewModel) {
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
                 actions = {
-                    IconButton(onClick = { viewModel.clearDevices() }) {
-                        Icon(
-                            imageVector = Icons.Default.Delete,
-                            contentDescription = "Clear device list",
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                    TooltipBox(
+                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                        tooltip = { PlainTooltip { Text("Clear device list") } },
+                        state = rememberTooltipState()
+                    ) {
+                        IconButton(onClick = { viewModel.clearDevices() }) {
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Clear device list",
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
                     }
                 }
             )

@@ -1,4 +1,4 @@
-package com.makeramen.ouround.ble
+package com.makeramen.around.ble
 
 import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter

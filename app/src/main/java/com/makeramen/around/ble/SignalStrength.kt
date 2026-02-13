@@ -1,4 +1,4 @@
-package com.makeramen.ouround.ble
+package com.makeramen.around.ble
 
 import androidx.compose.ui.graphics.Color
 
