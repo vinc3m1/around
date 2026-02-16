@@ -173,8 +173,8 @@ data class BleDevice(
 
     fun getDisplayName(): String? = advertisedName ?: name
 
-    fun getManufacturerNames(): List<String> {
-        return manufacturerData.keys.mapNotNull { CompanyDatabase.getCompanyName(it) }
+    fun getManufacturerNames(companyNames: Map<Int, String> = emptyMap()): List<String> {
+        return manufacturerData.keys.mapNotNull { companyNames[it] }
     }
 
     // ========== Google Device Detection ==========

@@ -19,20 +19,23 @@ data class ScannerUiState(
     val bluetoothEnabled: Boolean = true,
     val permissionsGranted: Boolean = false,
     val ouraDevices: List<BleDevice> = emptyList(),
-    val otherDevices: List<BleDevice> = emptyList()
+    val otherDevices: List<BleDevice> = emptyList(),
+    val companyNames: Map<Int, String> = emptyMap()
 )
 
 class BleViewModel(platformContext: PlatformContext) : ViewModel() {
-    init {
-        viewModelScope.launch {
-            CompanyDatabase.load()
-        }
-    }
-
     private val bleScanner = createBleScanner(platformContext, viewModelScope)
 
     private val _uiState = MutableStateFlow(ScannerUiState())
     val uiState: StateFlow<ScannerUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            CompanyDatabase.companies.collect { names ->
+                _uiState.update { it.copy(companyNames = names) }
+            }
+        }
+    }
 
     private val deviceCache = mutableMapOf<String, BleDevice>()
     private val ouraDeviceHistory = mutableMapOf<String, BleDevice>()

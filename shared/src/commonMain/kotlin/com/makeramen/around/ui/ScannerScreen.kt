@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.makeramen.around.ble.BleDevice
 import com.makeramen.around.ble.BleViewModel
-import com.makeramen.around.ble.CompanyDatabase
 import com.makeramen.around.ble.ScannerUiState
 import com.makeramen.around.ble.SignalStrength
 import org.jetbrains.compose.resources.painterResource
@@ -194,7 +193,7 @@ fun ScannerScreenContent(uiState: ScannerUiState, onClearDevices: () -> Unit) {
                 }
             } else {
                 items(ouraDevices, key = { (device, _) -> device.address }) { (device, displayName) ->
-                    OuraDeviceCard(device = device, displayName = displayName, modifier = Modifier.animateItem())
+                    OuraDeviceCard(device = device, displayName = displayName, companyNames = uiState.companyNames, modifier = Modifier.animateItem())
                 }
             }
 
@@ -210,7 +209,7 @@ fun ScannerScreenContent(uiState: ScannerUiState, onClearDevices: () -> Unit) {
 
                 if (namedExpanded) {
                     items(namedDevices, key = { (device, _) -> device.address }) { (device, displayName) ->
-                        CompactDeviceCard(device = device, displayName = displayName, modifier = Modifier.animateItem())
+                        CompactDeviceCard(device = device, displayName = displayName, companyNames = uiState.companyNames, modifier = Modifier.animateItem())
                     }
                 }
             }
@@ -227,7 +226,7 @@ fun ScannerScreenContent(uiState: ScannerUiState, onClearDevices: () -> Unit) {
 
                 if (appleExpanded) {
                     items(appleDevices, key = { (device, _) -> device.address }) { (device, detectedType) ->
-                        UnnamedDeviceCard(device = device, detectedType = detectedType, modifier = Modifier.animateItem())
+                        UnnamedDeviceCard(device = device, detectedType = detectedType, companyNames = uiState.companyNames, modifier = Modifier.animateItem())
                     }
                 }
             }
@@ -244,7 +243,7 @@ fun ScannerScreenContent(uiState: ScannerUiState, onClearDevices: () -> Unit) {
 
                 if (googleExpanded) {
                     items(googleDevices, key = { (device, _) -> device.address }) { (device, detectedType) ->
-                        UnnamedDeviceCard(device = device, detectedType = detectedType, modifier = Modifier.animateItem())
+                        UnnamedDeviceCard(device = device, detectedType = detectedType, companyNames = uiState.companyNames, modifier = Modifier.animateItem())
                     }
                 }
             }
@@ -261,7 +260,7 @@ fun ScannerScreenContent(uiState: ScannerUiState, onClearDevices: () -> Unit) {
 
                 if (unnamedExpanded) {
                     items(unnamedDevices, key = { it.address }) { device ->
-                        UnnamedDeviceCard(device = device, modifier = Modifier.animateItem())
+                        UnnamedDeviceCard(device = device, companyNames = uiState.companyNames, modifier = Modifier.animateItem())
                     }
                 }
             }
@@ -332,7 +331,7 @@ fun RelativeTimeText(
 }
 
 @Composable
-fun OuraDeviceCard(device: BleDevice, displayName: String, modifier: Modifier = Modifier) {
+fun OuraDeviceCard(device: BleDevice, displayName: String, companyNames: Map<Int, String> = emptyMap(), modifier: Modifier = Modifier) {
     val signalStrength = SignalStrength.fromRssi(device.rssi)
     val transition = updateTransition(targetState = signalStrength, label = "signal_strength")
     val animatedColor by transition.animateColor(label = "color") { it.color }
@@ -375,7 +374,7 @@ fun OuraDeviceCard(device: BleDevice, displayName: String, modifier: Modifier = 
                 if (device.manufacturerData.isNotEmpty()) {
                     Text(
                         text = "MFR: ${device.manufacturerData.keys.joinToString { id ->
-                            val name = CompanyDatabase.getCompanyName(id)
+                            val name = companyNames[id]
                             if (name != null) "0x${id.toString(16)} $name" else "0x${id.toString(16)}"
                         }}",
                         fontSize = 10.sp,
@@ -420,11 +419,11 @@ fun OuraDeviceCard(device: BleDevice, displayName: String, modifier: Modifier = 
 }
 
 @Composable
-fun CompactDeviceCard(device: BleDevice, displayName: String, modifier: Modifier = Modifier) {
+fun CompactDeviceCard(device: BleDevice, displayName: String, companyNames: Map<Int, String> = emptyMap(), modifier: Modifier = Modifier) {
     val signalStrength = SignalStrength.fromRssi(device.rssi)
     val transition = updateTransition(targetState = signalStrength, label = "signal_strength")
     val animatedColor by transition.animateColor(label = "color") { it.color }
-    val manufacturerNames = device.getManufacturerNames()
+    val manufacturerNames = device.getManufacturerNames(companyNames)
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -487,11 +486,11 @@ fun CompactDeviceCard(device: BleDevice, displayName: String, modifier: Modifier
 }
 
 @Composable
-fun UnnamedDeviceCard(device: BleDevice, detectedType: String? = null, modifier: Modifier = Modifier) {
+fun UnnamedDeviceCard(device: BleDevice, detectedType: String? = null, companyNames: Map<Int, String> = emptyMap(), modifier: Modifier = Modifier) {
     val signalStrength = SignalStrength.fromRssi(device.rssi)
     val transition = updateTransition(targetState = signalStrength, label = "signal_strength")
     val animatedColor by transition.animateColor(label = "color") { it.color }
-    val manufacturerNames = device.getManufacturerNames()
+    val manufacturerNames = device.getManufacturerNames(companyNames)
 
     Card(
         modifier = modifier.fillMaxWidth(),
