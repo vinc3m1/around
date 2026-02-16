@@ -10,6 +10,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.makeramen.around.ble.BleViewModel
+import com.makeramen.around.ble.PlatformContext
 import com.makeramen.around.ui.ScannerScreen
 import com.makeramen.around.ui.theme.AroundTheme
 
@@ -32,7 +33,7 @@ class MainActivity : ComponentActivity() {
 
         val factory = viewModelFactory {
             initializer {
-                BleViewModel(applicationContext)
+                BleViewModel(PlatformContext(applicationContext))
             }
         }
         viewModel = ViewModelProvider(this, factory)[BleViewModel::class.java]

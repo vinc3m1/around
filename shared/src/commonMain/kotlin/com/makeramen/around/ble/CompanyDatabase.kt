@@ -1,5 +1,6 @@
 package com.makeramen.around.ble
 
+import around.shared.generated.resources.Res
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.jetbrains.compose.resources.ExperimentalResourceApi
@@ -14,7 +15,7 @@ object CompanyDatabase {
     suspend fun load() {
         if (companies != null) return
         companies = try {
-            val bytes = org.jetbrains.compose.resources.readResourceBytes("files/company_ids.json")
+            val bytes = Res.readBytes("files/company_ids.json")
             val json = bytes.decodeToString()
             val entries = Json.decodeFromString<List<CompanyEntry>>(json)
             entries.associate { it.code to it.name }

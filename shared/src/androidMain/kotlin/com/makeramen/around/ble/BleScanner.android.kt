@@ -17,10 +17,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.shareIn
 
-actual typealias PlatformContext = Context
+actual class PlatformContext(val context: Context)
 
 actual fun createBleScanner(context: PlatformContext, scope: CoroutineScope): BleScanner {
-    return AndroidBleScanner(context, scope)
+    return AndroidBleScanner(context.context, scope)
 }
 
 private class AndroidBleScanner(context: Context, scope: CoroutineScope) : BleScanner {

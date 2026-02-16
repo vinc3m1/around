@@ -7,7 +7,12 @@ plugins {
 }
 
 kotlin {
-    androidTarget()
+    androidLibrary {
+        namespace = "com.makeramen.around.shared"
+        compileSdk = 36
+        minSdk = 31
+    }
+
     jvm("desktop")
 
     listOf(
@@ -43,17 +48,5 @@ kotlin {
                 implementation(libs.kotlinx.coroutines.swing)
             }
         }
-    }
-}
-
-android {
-    namespace = "com.makeramen.around.shared"
-    compileSdk = 36
-    defaultConfig {
-        minSdk = 31
-    }
-    compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
     }
 }
