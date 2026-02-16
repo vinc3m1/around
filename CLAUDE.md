@@ -1,40 +1,50 @@
 # Around
 
-Android app for finding Oura rings via BLE scanning.
+Kotlin Multiplatform app for finding Oura rings via BLE scanning. Targets Android, iOS, and Desktop.
 
 ## Build
 
 ```bash
-./gradlew assembleDebug          # Debug APK
-./gradlew installDebug           # Install to connected device
-./gradlew test                   # Run unit tests
-./gradlew connectedAndroidTest   # Run instrumented tests
+./gradlew :androidApp:assembleDebug    # Android Debug APK
+./gradlew :androidApp:installDebug     # Install to connected device
+./gradlew :shared:desktopTest          # Run unit tests (JVM)
+./gradlew :desktopApp:run              # Run desktop app
+./gradlew :androidApp:connectedAndroidTest  # Run instrumented tests
 ```
 
 ## Project Structure
 
 ```
-app/src/main/java/com/makeramen/around/
-├── MainActivity.kt              # Entry point, permissions handling
-├── AroundApplication.kt         # Application class
-├── ble/
-│   ├── BleScanner.kt           # BLE scanning logic
-│   ├── BleViewModel.kt         # UI state management
-│   ├── BleDevice.kt            # Device data model
-│   ├── SignalStrength.kt       # RSSI to signal strength mapping
-│   └── CompanyDatabase.kt      # Bluetooth company ID lookup
-└── ui/
-    ├── ScannerScreen.kt        # Main Compose UI
-    └── theme/                  # Material 3 theming
+shared/src/
+├── commonMain/kotlin/com/makeramen/around/
+│   ├── Platform.kt              # expect: logging
+│   ├── ble/
+│   │   ├── BleScanner.kt       # BLE scanner interface + expect factory
+│   │   ├── BleViewModel.kt     # UI state management (KMP ViewModel)
+│   │   ├── BleDevice.kt        # Device data model + detection logic
+│   │   ├── SignalStrength.kt   # RSSI to signal strength mapping
+│   │   └── CompanyDatabase.kt  # Bluetooth company ID lookup
+│   └── ui/
+│       ├── ScannerScreen.kt    # Main Compose UI
+│       └── theme/              # Material 3 theming (expect/actual for dynamic colors)
+├── commonMain/composeResources/ # Shared resources (icon, company_ids.json)
+├── androidMain/                 # Android BLE scanner, dynamic theme
+├── desktopMain/                 # Desktop stubs (no BLE)
+└── iosMain/                     # iOS stubs + MainViewController
+
+androidApp/                      # Android app shell (permissions, Activity)
+desktopApp/                      # Desktop JVM entry point
+iosApp/                          # iOS SwiftUI entry point
 ```
 
 ## Tech Stack
 
-- Kotlin
-- Jetpack Compose with Material 3
-- Android BLE APIs
-- ViewModel for state management
-- Square Logcat for debug logging
+- Kotlin Multiplatform
+- Compose Multiplatform with Material 3
+- Android BLE APIs (platform-specific via expect/actual)
+- KMP ViewModel for state management
+- kotlinx.serialization for JSON parsing
+- kotlinx.datetime for cross-platform time
 
 ## Code Style
 
@@ -43,10 +53,13 @@ app/src/main/java/com/makeramen/around/
 - State hoisting pattern - ViewModels expose `StateFlow`
 - Animations via Compose animation APIs
 - No external icon libraries - use built-in Material icons or custom vector drawables
+- Platform abstractions via expect/actual pattern
 
 ## Key Patterns
 
-- `BleViewModel` holds `BleUiState` exposed as `StateFlow`
+- `BleViewModel` holds `ScannerUiState` exposed as `StateFlow`
 - Device lists sorted by RSSI (signal strength)
-- Oura devices identified by advertised name prefix "Oura"
+- Oura devices identified by MAC prefix, manufacturer IDs, or name
 - Signal strength color-coded: green (near) → red (far)
+- BLE scanning abstracted via `BleScanner` interface with platform implementations
+- `PlatformContext` expect/actual for dependency injection (Android Context / empty on others)

@@ -20,4 +20,6 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Around"
-include(":app")
+include(":shared")
+include(":androidApp")
+include(":desktopApp")
