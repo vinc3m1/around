@@ -10,7 +10,11 @@ Kotlin Multiplatform app for finding Oura rings via BLE scanning. Targets Androi
 ./gradlew :shared:desktopTest          # Run unit tests (JVM)
 ./gradlew :desktopApp:run              # Run desktop app
 ./gradlew :androidApp:connectedAndroidTest  # Run instrumented tests
+./gradlew :shared:linkDebugFrameworkIosArm64       # Build iOS framework (device)
+./gradlew :shared:linkDebugFrameworkIosSimulatorArm64  # Build iOS framework (simulator)
 ```
+
+iOS app is built via Xcode — open `iosApp/iosApp.xcodeproj`.
 
 ## Project Structure
 
@@ -39,12 +43,12 @@ iosApp/                          # iOS SwiftUI entry point
 
 ## Tech Stack
 
-- Kotlin Multiplatform
-- Compose Multiplatform with Material 3
-- Android BLE APIs (platform-specific via expect/actual)
+- Kotlin 2.3.10 + Compose Multiplatform 1.10.1 + AGP 9.0.1
+- Material 3 via Compose Multiplatform
+- Android BLE APIs / iOS CoreBluetooth (platform-specific via expect/actual)
 - KMP ViewModel for state management
 - kotlinx.serialization for JSON parsing
-- kotlinx.datetime for cross-platform time
+- kotlin.time.Clock (stdlib) for cross-platform time
 
 ## Code Style
 

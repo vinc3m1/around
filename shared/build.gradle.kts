@@ -6,6 +6,10 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+compose.resources {
+    publicResClass = true
+}
+
 kotlin {
     androidLibrary {
         namespace = "com.makeramen.around.shared"

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="108" viewBox="0 0 108 108">
+  <defs>
+    <radialGradient id="bg" cx="54" cy="54" r="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1A237E"/>
+      <stop offset="0.5" stop-color="#3949AB"/>
+      <stop offset="1" stop-color="#5C6BC0"/>
+    </radialGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="108" height="108" fill="url(#bg)"/>
+  <!-- Subtle emanating rings -->
+  <circle cx="54" cy="54" r="36" fill="none" stroke="white" stroke-opacity="0.133" stroke-width="0.5"/>
+  <circle cx="54" cy="54" r="44" fill="none" stroke="white" stroke-opacity="0.082" stroke-width="0.5"/>
+  <circle cx="54" cy="54" r="52" fill="none" stroke="white" stroke-opacity="0.039" stroke-width="0.5"/>
+  <!-- Inner circle -->
+  <circle cx="54" cy="54" r="12" fill="none" stroke="white" stroke-width="3"/>
+  <!-- Outer circle -->
+  <circle cx="54" cy="54" r="24" fill="none" stroke="white" stroke-width="3"/>
+</svg>
