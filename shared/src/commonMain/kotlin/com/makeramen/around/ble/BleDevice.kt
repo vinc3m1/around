@@ -1,6 +1,6 @@
 package com.makeramen.around.ble
 
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 // Oura identification constants
 private const val OURA_MAC_PREFIX = "A0:38:F8"

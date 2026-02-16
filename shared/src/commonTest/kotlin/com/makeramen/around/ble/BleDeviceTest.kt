@@ -1,6 +1,6 @@
 package com.makeramen.around.ble
 
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

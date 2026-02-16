@@ -22,7 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -303,12 +303,12 @@ private fun CollapsibleHeader(
 }
 
 private fun formatLastSeen(lastSeen: Long): String {
-    val totalSeconds = (Clock.System.now().toEpochMilliseconds() - lastSeen) / 1000
+    val totalSeconds = (Clock.System.now().toEpochMilliseconds() - lastSeen) / 1000L
     return when {
-        totalSeconds < 60 -> "${totalSeconds}s ago"
-        totalSeconds < 3600 -> "${totalSeconds / 60}m ${totalSeconds % 60}s ago"
-        totalSeconds < 86400 -> "${totalSeconds / 3600}h ${(totalSeconds % 3600) / 60}m ago"
-        else -> "${totalSeconds / 86400}d ${(totalSeconds % 86400) / 3600}h ago"
+        totalSeconds < 60L -> "${totalSeconds}s ago"
+        totalSeconds < 3600L -> "${totalSeconds / 60L}m ${totalSeconds % 60L}s ago"
+        totalSeconds < 86400L -> "${totalSeconds / 3600L}h ${(totalSeconds % 3600L) / 60L}m ago"
+        else -> "${totalSeconds / 86400L}d ${(totalSeconds % 86400L) / 3600L}h ago"
     }
 }
 

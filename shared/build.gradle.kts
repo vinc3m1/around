@@ -11,6 +11,7 @@ kotlin {
         namespace = "com.makeramen.around.shared"
         compileSdk = 36
         minSdk = 31
+        androidResources.enable = true
     }
 
     jvm("desktop")
@@ -28,11 +29,12 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.material3)
+            implementation(libs.material.icons.core)
+            implementation(libs.compose.ui)
+            implementation(libs.compose.components.resources)
             implementation(libs.lifecycle.viewmodel.compose)
             implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
