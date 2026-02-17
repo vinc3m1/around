@@ -365,7 +365,6 @@ fun OuraDeviceCard(device: BleDevice, displayName: String, companyNames: Map<Int
 
     val cardColor = lerp(animatedColor, MaterialTheme.colorScheme.surfaceVariant, stale)
 
-
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -440,7 +439,6 @@ fun OuraDeviceCard(device: BleDevice, displayName: String, companyNames: Map<Int
                 }
                 RelativeTimeText(
                     timestamp = device.lastSeen,
-
                     fontSize = 10.sp,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
@@ -460,7 +458,6 @@ fun CompactDeviceCard(device: BleDevice, displayName: String, companyNames: Map<
     val manufacturerNames = device.getManufacturerNames(companyNames)
 
     val cardColor = lerp(animatedColor, MaterialTheme.colorScheme.surfaceVariant, stale)
-
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -514,7 +511,6 @@ fun CompactDeviceCard(device: BleDevice, displayName: String, companyNames: Map<
                 )
                 RelativeTimeText(
                     timestamp = device.lastSeen,
-
                     fontSize = 9.sp,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
@@ -534,7 +530,6 @@ fun UnnamedDeviceCard(device: BleDevice, detectedType: String? = null, companyNa
     val manufacturerNames = device.getManufacturerNames(companyNames)
 
     val cardColor = lerp(animatedColor, MaterialTheme.colorScheme.surfaceVariant, stale)
-
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -583,7 +578,6 @@ fun UnnamedDeviceCard(device: BleDevice, detectedType: String? = null, companyNa
             ) {
                 RelativeTimeText(
                     timestamp = device.lastSeen,
-
                     fontSize = 9.sp,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
