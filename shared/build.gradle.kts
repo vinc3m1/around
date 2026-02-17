@@ -40,7 +40,6 @@ kotlin {
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
             implementation(libs.lifecycle.viewmodel.compose)
-            implementation(libs.kotlinx.datetime)
             implementation(libs.kotlinx.serialization.json)
         }
 

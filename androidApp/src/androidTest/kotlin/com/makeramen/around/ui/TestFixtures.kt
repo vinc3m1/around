@@ -2,7 +2,7 @@ package com.makeramen.around.ui
 
 import com.makeramen.around.ble.BleDevice
 import com.makeramen.around.ble.ScannerUiState
-import kotlinx.datetime.Clock
+import kotlin.time.Clock
 
 object TestFixtures {
 
