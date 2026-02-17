@@ -10,8 +10,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -19,8 +19,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlin.math.ln
 import kotlin.time.Clock
 import androidx.compose.ui.Alignment
@@ -98,15 +103,27 @@ fun ScannerScreenContent(uiState: ScannerUiState, onClearDevices: () -> Unit) {
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
                 actions = {
+                    val refreshRotation = remember { Animatable(0f) }
+                    val scope = rememberCoroutineScope()
                     TooltipBox(
                         positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
                         tooltip = { PlainTooltip { Text("Clear device list") } },
                         state = rememberTooltipState()
                     ) {
-                        IconButton(onClick = onClearDevices) {
+                        IconButton(onClick = {
+                            onClearDevices()
+                            scope.launch {
+                                refreshRotation.snapTo(0f)
+                                refreshRotation.animateTo(
+                                    targetValue = 360f,
+                                    animationSpec = tween(durationMillis = 500)
+                                )
+                            }
+                        }) {
                             Icon(
-                                imageVector = Icons.Default.Delete,
+                                imageVector = Icons.Default.Refresh,
                                 contentDescription = "Clear device list",
+                                modifier = Modifier.rotate(refreshRotation.value),
                                 tint = MaterialTheme.colorScheme.onPrimaryContainer
                             )
                         }
