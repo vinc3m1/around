@@ -11,3 +11,4 @@ local.properties
 .claude/
 .kotlin/
 xcuserdata/
+androidApp/release/
