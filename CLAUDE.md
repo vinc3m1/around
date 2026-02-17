@@ -50,6 +50,10 @@ iosApp/                          # iOS SwiftUI entry point
 - kotlinx.serialization for JSON parsing
 - kotlin.time.Clock (stdlib) for cross-platform time
 
+## Versioning
+
+Android git tags follow the format: `android-v{versionName}-{versionCode}` (e.g., `android-v1.0.2-3`). iOS and desktop tag formats are TBD.
+
 ## Code Style
 
 - Use Kotlin idioms (data classes, extension functions, etc.)
