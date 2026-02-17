@@ -92,6 +92,7 @@ enum class AppleContinuityType(val byte: Byte, val label: String) {
 data class BleDevice(
     val name: String?,
     val address: String,
+    val displayAddress: String = address,
     val rssi: Int,
     val txPower: Int? = null,
     val advertisedName: String? = null,

@@ -364,7 +364,7 @@ fun OuraDeviceCard(device: BleDevice, displayName: String, companyNames: Map<Int
 
                 // MAC Address
                 Text(
-                    text = device.address,
+                    text = device.displayAddress,
                     fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onPrimary
@@ -454,7 +454,7 @@ fun CompactDeviceCard(device: BleDevice, displayName: String, companyNames: Map<
                 Text(
                     text = buildAnnotatedString {
                         withStyle(SpanStyle(fontFamily = FontFamily.Monospace)) {
-                            append(device.address)
+                            append(device.displayAddress)
                         }
                         if (manufacturerNames.isNotEmpty()) {
                             append(" · ${manufacturerNames.joinToString()}")
@@ -509,7 +509,7 @@ fun UnnamedDeviceCard(device: BleDevice, detectedType: String? = null, companyNa
             // Device info: MAC (stable) + manufacturer and detected type (marquee if overflow)
             Row(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = device.address,
+                    text = device.displayAddress,
                     fontSize = 10.sp,
                     fontFamily = FontFamily.Monospace,
                     color = MaterialTheme.colorScheme.onPrimary,

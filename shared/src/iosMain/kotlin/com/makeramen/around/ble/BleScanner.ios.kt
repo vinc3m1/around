@@ -65,6 +65,7 @@ private class IosBleScanner : BleScanner {
             val device = BleDevice(
                 name = name,
                 address = address,
+                displayAddress = address.substringBefore('-'),
                 rssi = rssi,
                 txPower = txPower,
                 advertisedName = advertisedName,
