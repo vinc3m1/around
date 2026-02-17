@@ -38,7 +38,6 @@ class BleViewModel(platformContext: PlatformContext) : ViewModel() {
     }
 
     private val deviceCache = mutableMapOf<String, BleDevice>()
-    private val ouraDeviceHistory = mutableMapOf<String, BleDevice>()
     private var scanJob: Job? = null
 
     // Maintains stable ordering - only updated periodically
@@ -79,11 +78,6 @@ class BleViewModel(platformContext: PlatformContext) : ViewModel() {
                 .collect { device ->
                     deviceCache[device.address] = device
 
-                    // Cache Oura devices permanently
-                    if (device.isLikelyOura()) {
-                        ouraDeviceHistory[device.address] = device
-                    }
-
                     // Update data without reordering
                     updateDeviceList()
                 }
@@ -101,41 +95,40 @@ class BleViewModel(platformContext: PlatformContext) : ViewModel() {
 
     fun clearDevices() {
         deviceCache.clear()
-        ouraDeviceHistory.clear()
         ouraOrder = emptyList()
         otherOrder = emptyList()
         _uiState.update { it.copy(ouraDevices = emptyList(), otherDevices = emptyList()) }
     }
 
     private fun resortDeviceLists() {
-        ouraOrder = ouraDeviceHistory.values
-            .sortedWith(
-                compareByDescending<BleDevice> { deviceCache.containsKey(it.address) }
-                    .thenByDescending { it.rssi }
-            )
+        ouraOrder = deviceCache.values
+            .filter { it.isLikelyOura() }
+            .sortedByDescending { it.rssi }
             .map { it.address }
 
-        val others = deviceCache.values.filter { !it.isLikelyOura() }
-        otherOrder = others.sortedByDescending { it.rssi }.map { it.address }
+        otherOrder = deviceCache.values
+            .filter { !it.isLikelyOura() }
+            .sortedByDescending { it.rssi }
+            .map { it.address }
     }
 
     private fun updateDeviceList() {
-        val currentOuraAddresses = ouraDeviceHistory.keys
+        val currentOuraAddresses = deviceCache.keys.filter { deviceCache[it]?.isLikelyOura() == true }.toSet()
         val newOura = currentOuraAddresses - ouraOrder.toSet()
         val effectiveOuraOrder = ouraOrder.filter { it in currentOuraAddresses }.toMutableList()
         for (address in newOura) {
-            val device = ouraDeviceHistory[address] ?: continue
+            val device = deviceCache[address] ?: continue
             val insertIndex = effectiveOuraOrder.indexOfFirst { addr ->
-                val existing = ouraDeviceHistory[addr]
+                val existing = deviceCache[addr]
                 existing != null && existing.rssi < device.rssi
             }.takeIf { it >= 0 } ?: effectiveOuraOrder.size
             effectiveOuraOrder.add(insertIndex, address)
         }
         ouraOrder = effectiveOuraOrder
 
-        val sortedOura = effectiveOuraOrder.mapNotNull { ouraDeviceHistory[it] }
+        val sortedOura = effectiveOuraOrder.mapNotNull { deviceCache[it] }
 
-        val currentOtherAddresses = deviceCache.keys.filter { !ouraDeviceHistory.containsKey(it) }.toSet()
+        val currentOtherAddresses = deviceCache.keys.filter { deviceCache[it]?.isLikelyOura() != true }.toSet()
         val newOthers = currentOtherAddresses - otherOrder.toSet()
         val effectiveOtherOrder = otherOrder.filter { it in currentOtherAddresses }.toMutableList()
         for (address in newOthers) {
