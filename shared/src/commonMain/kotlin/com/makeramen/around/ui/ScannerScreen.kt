@@ -14,18 +14,19 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
+import kotlin.math.ln
 import kotlin.time.Clock
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -311,6 +312,32 @@ private fun formatLastSeen(lastSeen: Long): String {
     }
 }
 
+private const val STALE_GRACE_SECONDS = 5.0
+private const val STALE_MAX_SECONDS = 1800.0 // 30 minutes = fully stale
+private const val STALE_LOG_DIVISOR = 10.0
+
+private fun staleFraction(lastSeenMs: Long, nowMs: Long): Float {
+    val elapsedSeconds = (nowMs - lastSeenMs) / 1000.0
+    if (elapsedSeconds <= STALE_GRACE_SECONDS) return 0f
+    val adjusted = elapsedSeconds - STALE_GRACE_SECONDS
+    val maxAdjusted = STALE_MAX_SECONDS - STALE_GRACE_SECONDS
+    return (ln(1.0 + adjusted / STALE_LOG_DIVISOR) / ln(1.0 + maxAdjusted / STALE_LOG_DIVISOR))
+        .coerceIn(0.0, 1.0).toFloat()
+}
+
+private const val STALE_TICK_MS = 5000L
+
+@Composable
+private fun rememberStaleNow(): Long {
+    val now by produceState(Clock.System.now().toEpochMilliseconds()) {
+        while (true) {
+            delay(STALE_TICK_MS)
+            value = Clock.System.now().toEpochMilliseconds()
+        }
+    }
+    return now
+}
+
 @Composable
 fun RelativeTimeText(
     timestamp: Long,
@@ -318,28 +345,31 @@ fun RelativeTimeText(
     fontSize: androidx.compose.ui.unit.TextUnit,
     color: androidx.compose.ui.graphics.Color
 ) {
-    var text by remember { mutableStateOf(formatLastSeen(timestamp)) }
-
-    LaunchedEffect(timestamp) {
+    val text by produceState(formatLastSeen(timestamp), timestamp) {
         while (true) {
-            text = formatLastSeen(timestamp)
+            value = formatLastSeen(timestamp)
             delay(1000)
         }
     }
-
     Text(text = text, modifier = modifier, fontSize = fontSize, color = color)
 }
 
 @Composable
 fun OuraDeviceCard(device: BleDevice, displayName: String, companyNames: Map<Int, String> = emptyMap(), modifier: Modifier = Modifier) {
+    val now = rememberStaleNow()
+    val stale = staleFraction(device.lastSeen, now)
+
     val signalStrength = SignalStrength.fromRssi(device.rssi)
     val transition = updateTransition(targetState = signalStrength, label = "signal_strength")
     val animatedColor by transition.animateColor(label = "color") { it.color }
 
+    val cardColor = lerp(animatedColor, MaterialTheme.colorScheme.surfaceVariant, stale)
+
+
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = animatedColor
+            containerColor = cardColor
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
@@ -410,6 +440,7 @@ fun OuraDeviceCard(device: BleDevice, displayName: String, companyNames: Map<Int
                 }
                 RelativeTimeText(
                     timestamp = device.lastSeen,
+
                     fontSize = 10.sp,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
@@ -420,15 +451,21 @@ fun OuraDeviceCard(device: BleDevice, displayName: String, companyNames: Map<Int
 
 @Composable
 fun CompactDeviceCard(device: BleDevice, displayName: String, companyNames: Map<Int, String> = emptyMap(), modifier: Modifier = Modifier) {
+    val now = rememberStaleNow()
+    val stale = staleFraction(device.lastSeen, now)
+
     val signalStrength = SignalStrength.fromRssi(device.rssi)
     val transition = updateTransition(targetState = signalStrength, label = "signal_strength")
     val animatedColor by transition.animateColor(label = "color") { it.color }
     val manufacturerNames = device.getManufacturerNames(companyNames)
 
+    val cardColor = lerp(animatedColor, MaterialTheme.colorScheme.surfaceVariant, stale)
+
+
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = animatedColor
+            containerColor = cardColor
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
@@ -477,6 +514,7 @@ fun CompactDeviceCard(device: BleDevice, displayName: String, companyNames: Map<
                 )
                 RelativeTimeText(
                     timestamp = device.lastSeen,
+
                     fontSize = 9.sp,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
@@ -487,15 +525,21 @@ fun CompactDeviceCard(device: BleDevice, displayName: String, companyNames: Map<
 
 @Composable
 fun UnnamedDeviceCard(device: BleDevice, detectedType: String? = null, companyNames: Map<Int, String> = emptyMap(), modifier: Modifier = Modifier) {
+    val now = rememberStaleNow()
+    val stale = staleFraction(device.lastSeen, now)
+
     val signalStrength = SignalStrength.fromRssi(device.rssi)
     val transition = updateTransition(targetState = signalStrength, label = "signal_strength")
     val animatedColor by transition.animateColor(label = "color") { it.color }
     val manufacturerNames = device.getManufacturerNames(companyNames)
 
+    val cardColor = lerp(animatedColor, MaterialTheme.colorScheme.surfaceVariant, stale)
+
+
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = animatedColor
+            containerColor = cardColor
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
@@ -539,6 +583,7 @@ fun UnnamedDeviceCard(device: BleDevice, detectedType: String? = null, companyNa
             ) {
                 RelativeTimeText(
                     timestamp = device.lastSeen,
+
                     fontSize = 9.sp,
                     color = MaterialTheme.colorScheme.onPrimary
                 )
