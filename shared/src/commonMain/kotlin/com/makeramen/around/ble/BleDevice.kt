@@ -174,8 +174,9 @@ data class BleDevice(
 
     fun getDisplayName(): String? = advertisedName ?: name
 
-    fun getManufacturerNames(companyNames: Map<Int, String> = emptyMap()): List<String> {
-        return manufacturerData.keys.mapNotNull { companyNames[it] }
+    fun getManufacturerName(): String? {
+        val names = manufacturerData.keys.mapNotNull { CompanyDatabase.companies[it] }
+        return names.joinToString().ifEmpty { null }
     }
 
     // ========== Google Device Detection ==========

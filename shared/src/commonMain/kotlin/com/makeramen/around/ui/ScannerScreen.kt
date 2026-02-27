@@ -46,6 +46,8 @@ import com.makeramen.around.ble.SignalStrength
 import org.jetbrains.compose.resources.painterResource
 import around.shared.generated.resources.Res
 import around.shared.generated.resources.ic_launcher_foreground
+import androidx.compose.ui.tooling.preview.Preview
+import com.makeramen.around.ui.theme.AroundTheme
 
 @Composable
 fun ScannerScreen(viewModel: BleViewModel) {
@@ -211,7 +213,7 @@ fun ScannerScreenContent(uiState: ScannerUiState, onClearDevices: () -> Unit) {
                 }
             } else {
                 items(ouraDevices, key = { (device, _) -> device.address }) { (device, displayName) ->
-                    OuraDeviceCard(device = device, displayName = displayName, companyNames = uiState.companyNames, modifier = Modifier.animateItem())
+                    OuraDeviceCard(device = device, displayName = displayName, modifier = Modifier.animateItem())
                 }
             }
 
@@ -227,7 +229,7 @@ fun ScannerScreenContent(uiState: ScannerUiState, onClearDevices: () -> Unit) {
 
                 if (namedExpanded) {
                     items(namedDevices, key = { (device, _) -> device.address }) { (device, displayName) ->
-                        CompactDeviceCard(device = device, displayName = displayName, companyNames = uiState.companyNames, modifier = Modifier.animateItem())
+                        CompactDeviceCard(device = device, displayName = displayName, modifier = Modifier.animateItem())
                     }
                 }
             }
@@ -244,7 +246,7 @@ fun ScannerScreenContent(uiState: ScannerUiState, onClearDevices: () -> Unit) {
 
                 if (appleExpanded) {
                     items(appleDevices, key = { (device, _) -> device.address }) { (device, detectedType) ->
-                        UnnamedDeviceCard(device = device, detectedType = detectedType, companyNames = uiState.companyNames, modifier = Modifier.animateItem())
+                        UnnamedDeviceCard(device = device, detectedType = detectedType, modifier = Modifier.animateItem())
                     }
                 }
             }
@@ -261,7 +263,7 @@ fun ScannerScreenContent(uiState: ScannerUiState, onClearDevices: () -> Unit) {
 
                 if (googleExpanded) {
                     items(googleDevices, key = { (device, _) -> device.address }) { (device, detectedType) ->
-                        UnnamedDeviceCard(device = device, detectedType = detectedType, companyNames = uiState.companyNames, modifier = Modifier.animateItem())
+                        UnnamedDeviceCard(device = device, detectedType = detectedType, modifier = Modifier.animateItem())
                     }
                 }
             }
@@ -278,7 +280,7 @@ fun ScannerScreenContent(uiState: ScannerUiState, onClearDevices: () -> Unit) {
 
                 if (unnamedExpanded) {
                     items(unnamedDevices, key = { it.address }) { device ->
-                        UnnamedDeviceCard(device = device, companyNames = uiState.companyNames, modifier = Modifier.animateItem())
+                        UnnamedDeviceCard(device = device, modifier = Modifier.animateItem())
                     }
                 }
             }
@@ -372,7 +374,7 @@ fun RelativeTimeText(
 }
 
 @Composable
-fun OuraDeviceCard(device: BleDevice, displayName: String, companyNames: Map<Int, String> = emptyMap(), modifier: Modifier = Modifier) {
+fun OuraDeviceCard(device: BleDevice, displayName: String, modifier: Modifier = Modifier) {
     val now = rememberStaleNow()
     val stale = staleFraction(device.lastSeen, now)
 
@@ -416,13 +418,10 @@ fun OuraDeviceCard(device: BleDevice, displayName: String, companyNames: Map<Int
                     color = MaterialTheme.colorScheme.onPrimary
                 )
 
-                // Manufacturer IDs (if any)
-                if (device.manufacturerData.isNotEmpty()) {
+                // Manufacturer name (if known)
+                device.getManufacturerName()?.let { name ->
                     Text(
-                        text = "MFR: ${device.manufacturerData.keys.joinToString { id ->
-                            val name = companyNames[id]
-                            if (name != null) "0x${id.toString(16)} $name" else "0x${id.toString(16)}"
-                        }}",
+                        text = name,
                         fontSize = 10.sp,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
@@ -465,14 +464,14 @@ fun OuraDeviceCard(device: BleDevice, displayName: String, companyNames: Map<Int
 }
 
 @Composable
-fun CompactDeviceCard(device: BleDevice, displayName: String, companyNames: Map<Int, String> = emptyMap(), modifier: Modifier = Modifier) {
+fun CompactDeviceCard(device: BleDevice, displayName: String, modifier: Modifier = Modifier) {
     val now = rememberStaleNow()
     val stale = staleFraction(device.lastSeen, now)
 
     val signalStrength = SignalStrength.fromRssi(device.rssi)
     val transition = updateTransition(targetState = signalStrength, label = "signal_strength")
     val animatedColor by transition.animateColor(label = "color") { it.color }
-    val manufacturerNames = device.getManufacturerNames(companyNames)
+    val manufacturerName = device.getManufacturerName()
 
     val cardColor = lerp(animatedColor, MaterialTheme.colorScheme.surfaceVariant, stale)
 
@@ -507,9 +506,7 @@ fun CompactDeviceCard(device: BleDevice, displayName: String, companyNames: Map<
                         withStyle(SpanStyle(fontFamily = FontFamily.Monospace)) {
                             append(device.displayAddress)
                         }
-                        if (manufacturerNames.isNotEmpty()) {
-                            append(" · ${manufacturerNames.joinToString()}")
-                        }
+                        manufacturerName?.let { append(" · $it") }
                     },
                     fontSize = 9.sp,
                     color = MaterialTheme.colorScheme.onPrimary
@@ -537,14 +534,14 @@ fun CompactDeviceCard(device: BleDevice, displayName: String, companyNames: Map<
 }
 
 @Composable
-fun UnnamedDeviceCard(device: BleDevice, detectedType: String? = null, companyNames: Map<Int, String> = emptyMap(), modifier: Modifier = Modifier) {
+fun UnnamedDeviceCard(device: BleDevice, detectedType: String? = null, modifier: Modifier = Modifier) {
     val now = rememberStaleNow()
     val stale = staleFraction(device.lastSeen, now)
 
     val signalStrength = SignalStrength.fromRssi(device.rssi)
     val transition = updateTransition(targetState = signalStrength, label = "signal_strength")
     val animatedColor by transition.animateColor(label = "color") { it.color }
-    val manufacturerNames = device.getManufacturerNames(companyNames)
+    val manufacturerName = device.getManufacturerName()
 
     val cardColor = lerp(animatedColor, MaterialTheme.colorScheme.surfaceVariant, stale)
 
@@ -572,9 +569,7 @@ fun UnnamedDeviceCard(device: BleDevice, detectedType: String? = null, companyNa
                     maxLines = 1
                 )
                 val suffix = buildString {
-                    if (manufacturerNames.isNotEmpty()) {
-                        append(" · ${manufacturerNames.joinToString()}")
-                    }
+                    manufacturerName?.let { append(" · $it") }
                     detectedType?.let { append(" · $it") }
                 }
                 if (suffix.isNotEmpty()) {
@@ -606,5 +601,20 @@ fun UnnamedDeviceCard(device: BleDevice, detectedType: String? = null, companyNa
                 )
             }
         }
+    }
+}
+
+@Preview
+@Composable
+fun ScannerScreenPreview() {
+    AroundTheme {
+        ScannerScreenContent(
+            uiState = ScannerUiState(
+                isScanning = true,
+                permissionsGranted = true,
+                bluetoothEnabled = true
+            ),
+            onClearDevices = {}
+        )
     }
 }
