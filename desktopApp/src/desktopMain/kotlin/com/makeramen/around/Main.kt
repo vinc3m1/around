@@ -1,5 +1,6 @@
 package com.makeramen.around
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -18,6 +19,10 @@ fun main() = application {
         icon = painterResource(Res.drawable.ic_launcher),
     ) {
         val viewModel = viewModel { BleViewModel(PlatformContext()) }
+        LaunchedEffect(Unit) {
+            viewModel.setPermissionsGranted(true)
+            viewModel.startScanning()
+        }
         AroundTheme {
             ScannerScreen(viewModel = viewModel)
         }
