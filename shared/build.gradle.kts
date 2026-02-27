@@ -119,6 +119,12 @@ kotlin {
             }
         }
 
+        val androidMain by getting {
+            dependencies {
+                implementation(libs.compose.ui.tooling)
+            }
+        }
+
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }

@@ -57,7 +57,11 @@ fun ScannerScreen(viewModel: BleViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScannerScreenContent(uiState: ScannerUiState, onClearDevices: () -> Unit) {
+fun ScannerScreenContent(
+    uiState: ScannerUiState,
+    onClearDevices: () -> Unit,
+    initialExpanded: Boolean = false
+) {
     // Map Oura devices with display name (default to "Oura Ring" if identified without name)
     val ouraDevices = uiState.ouraDevices.map { device ->
         device to (device.getDisplayName() ?: "Oura Ring")
@@ -83,10 +87,10 @@ fun ScannerScreenContent(uiState: ScannerUiState, onClearDevices: () -> Unit) {
     val unnamedDevices = otherDevices.filter { it.getDisplayName() == null }
 
     // Collapsible state - collapsed by default
-    var appleExpanded by rememberSaveable { mutableStateOf(false) }
-    var googleExpanded by rememberSaveable { mutableStateOf(false) }
-    var namedExpanded by rememberSaveable { mutableStateOf(false) }
-    var unnamedExpanded by rememberSaveable { mutableStateOf(false) }
+    var appleExpanded by rememberSaveable { mutableStateOf(initialExpanded) }
+    var googleExpanded by rememberSaveable { mutableStateOf(initialExpanded) }
+    var namedExpanded by rememberSaveable { mutableStateOf(initialExpanded) }
+    var unnamedExpanded by rememberSaveable { mutableStateOf(initialExpanded) }
 
     Scaffold(
         topBar = {
@@ -604,17 +608,135 @@ fun UnnamedDeviceCard(device: BleDevice, detectedType: String? = null, modifier:
     }
 }
 
-@Preview
+@Preview(heightDp = 1200)
 @Composable
 fun ScannerScreenPreview() {
+    val now = Clock.System.now().toEpochMilliseconds()
     AroundTheme {
         ScannerScreenContent(
             uiState = ScannerUiState(
                 isScanning = true,
                 permissionsGranted = true,
-                bluetoothEnabled = true
+                bluetoothEnabled = true,
+                ouraDevices = listOf(
+                    // Very Close, fresh, with txPower
+                    BleDevice(
+                        name = "Oura Ring 4",
+                        address = "A0:38:F8:01:23:45",
+                        rssi = -35,
+                        txPower = -21,
+                        manufacturerData = mapOf(690 to byteArrayOf()),
+                        lastSeen = now
+                    ),
+                    // Close, 30s stale
+                    BleDevice(
+                        name = "Oura Ring 3",
+                        address = "A0:38:F8:67:89:AB",
+                        rssi = -60,
+                        manufacturerData = mapOf(772 to byteArrayOf()),
+                        lastSeen = now - 30_000
+                    ),
+                    // Far, 10min stale, no name (falls back to "Oura Ring")
+                    BleDevice(
+                        name = null,
+                        address = "A0:38:F8:CD:EF:01",
+                        rssi = -80,
+                        manufacturerData = mapOf(690 to byteArrayOf()),
+                        lastSeen = now - 600_000
+                    ),
+                    // Very Far, 20min stale
+                    BleDevice(
+                        advertisedName = "Oura Ring Gen2",
+                        name = null,
+                        address = "A0:38:F8:23:45:67",
+                        rssi = -95,
+                        manufacturerData = mapOf(690 to byteArrayOf()),
+                        lastSeen = now - 1_200_000
+                    ),
+                ),
+                otherDevices = listOf(
+                    // Apple: AirTag (Full battery), Close, fresh
+                    BleDevice(
+                        name = null,
+                        address = "AA:BB:CC:11:22:33",
+                        rssi = -55,
+                        manufacturerData = mapOf(76 to byteArrayOf(0x12, 0x19, 0x10)),
+                        lastSeen = now
+                    ),
+                    // Apple: iPhone/Mac (Active), Far, 45s stale
+                    BleDevice(
+                        name = null,
+                        address = "AA:BB:CC:44:55:66",
+                        rssi = -75,
+                        manufacturerData = mapOf(76 to byteArrayOf(0x10, 0x00, 0x07)),
+                        lastSeen = now - 45_000
+                    ),
+                    // Apple: AirPods, Very Far, 5min stale
+                    BleDevice(
+                        name = null,
+                        address = "AA:BB:CC:77:88:99",
+                        rssi = -92,
+                        manufacturerData = mapOf(76 to byteArrayOf(0x07)),
+                        lastSeen = now - 300_000
+                    ),
+                    // Google: Fast Pair, Close, 10s stale
+                    BleDevice(
+                        name = null,
+                        address = "DD:EE:FF:11:22:33",
+                        rssi = -58,
+                        serviceUuids = listOf("0000FE2C-0000-1000-8000-00805F9B34FB"),
+                        manufacturerData = mapOf(224 to byteArrayOf()),
+                        lastSeen = now - 10_000
+                    ),
+                    // Google: Find My Tag, Far, 2min stale
+                    BleDevice(
+                        name = null,
+                        address = "DD:EE:FF:44:55:66",
+                        rssi = -82,
+                        serviceUuids = listOf("0000FEAA-0000-1000-8000-00805F9B34FB"),
+                        lastSeen = now - 120_000
+                    ),
+                    // Named: Very Close, fresh
+                    BleDevice(
+                        name = "JBL Flip 6",
+                        address = "11:22:33:44:55:66",
+                        rssi = -40,
+                        lastSeen = now - 5_000
+                    ),
+                    // Named: Close, 1min stale, with manufacturer
+                    BleDevice(
+                        name = "Galaxy Watch5",
+                        address = "22:33:44:55:66:77",
+                        rssi = -65,
+                        manufacturerData = mapOf(117 to byteArrayOf()),
+                        lastSeen = now - 60_000
+                    ),
+                    // Named: Very Far, 15min stale
+                    BleDevice(
+                        name = "Fitbit Sense",
+                        address = "33:44:55:66:77:88",
+                        rssi = -95,
+                        lastSeen = now - 900_000
+                    ),
+                    // Unnamed: Far, 20s stale
+                    BleDevice(
+                        name = null,
+                        address = "44:55:66:77:88:99",
+                        rssi = -78,
+                        lastSeen = now - 20_000
+                    ),
+                    // Unnamed: Very Far, 20min stale, with manufacturer data
+                    BleDevice(
+                        name = null,
+                        address = "55:66:77:88:99:AA",
+                        rssi = -98,
+                        manufacturerData = mapOf(301 to byteArrayOf()),
+                        lastSeen = now - 1_200_000
+                    ),
+                )
             ),
-            onClearDevices = {}
+            onClearDevices = {},
+            initialExpanded = true
         )
     }
 }
