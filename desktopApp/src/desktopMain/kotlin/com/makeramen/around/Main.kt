@@ -1,6 +1,6 @@
 package com.makeramen.around
 
-import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import around.shared.generated.resources.Res
@@ -17,7 +17,7 @@ fun main() = application {
         title = "Around",
         icon = painterResource(Res.drawable.ic_launcher),
     ) {
-        val viewModel = remember { BleViewModel(PlatformContext()) }
+        val viewModel = viewModel { BleViewModel(PlatformContext()) }
         AroundTheme {
             ScannerScreen(viewModel = viewModel)
         }

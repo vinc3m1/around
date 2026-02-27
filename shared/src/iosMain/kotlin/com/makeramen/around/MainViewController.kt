@@ -1,7 +1,7 @@
 package com.makeramen.around
 
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.window.ComposeUIViewController
 import com.makeramen.around.ble.BleViewModel
 import com.makeramen.around.ble.PlatformContext
@@ -12,7 +12,7 @@ import platform.CoreBluetooth.CBManagerAuthorizationAllowedAlways
 import platform.CoreBluetooth.CBManagerAuthorizationNotDetermined
 
 fun MainViewController() = ComposeUIViewController {
-    val viewModel = remember { BleViewModel(PlatformContext()) }
+    val viewModel = viewModel { BleViewModel(PlatformContext()) }
 
     LaunchedEffect(Unit) {
         val auth = CBCentralManager.authorization
