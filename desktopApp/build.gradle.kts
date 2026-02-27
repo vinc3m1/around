@@ -15,6 +15,7 @@ kotlin {
                 implementation(project(":shared"))
                 implementation(compose.desktop.currentOs)
                 implementation(libs.compose.components.resources)
+                implementation(libs.lifecycle.viewmodel.compose)
             }
         }
     }
