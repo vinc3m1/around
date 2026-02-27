@@ -16,6 +16,11 @@ Kotlin Multiplatform app for finding Oura rings via BLE scanning. Targets Androi
 
 iOS app is built via Xcode — open `iosApp/iosApp.xcodeproj`.
 
+```bash
+./gradlew updateCompanyIdentifiers              # Download latest Bluetooth SIG YAML
+./gradlew :shared:generateCompanyDatabase       # Regenerate CompanyDatabase.kt (runs automatically during build)
+```
+
 ## Project Structure
 
 ```
@@ -27,11 +32,11 @@ shared/src/
 │   │   ├── BleViewModel.kt     # UI state management (KMP ViewModel)
 │   │   ├── BleDevice.kt        # Device data model + detection logic
 │   │   ├── SignalStrength.kt   # RSSI to signal strength mapping
-│   │   └── CompanyDatabase.kt  # Bluetooth company ID lookup
+│   │   └── CompanyDatabase.kt  # Generated: Bluetooth company ID map (do not edit)
 │   └── ui/
 │       ├── ScannerScreen.kt    # Main Compose UI
 │       └── theme/              # Material 3 theming (expect/actual for dynamic colors)
-├── commonMain/composeResources/ # Shared resources (icon, company_ids.json)
+├── commonMain/composeResources/ # Shared resources (icon)
 ├── androidMain/                 # Android BLE scanner, dynamic theme
 ├── desktopMain/                 # Desktop stubs (no BLE)
 └── iosMain/                     # iOS stubs + MainViewController
@@ -39,6 +44,9 @@ shared/src/
 androidApp/                      # Android app shell (permissions, Activity)
 desktopApp/                      # Desktop JVM entry point
 iosApp/                          # iOS SwiftUI entry point
+scripts/
+├── company_identifiers.yaml     # Bluetooth SIG company IDs (source of truth)
+└── (codegen via Gradle task)    # generates CompanyDatabase.kt at build time
 ```
 
 ## Tech Stack
@@ -47,8 +55,8 @@ iosApp/                          # iOS SwiftUI entry point
 - Material 3 via Compose Multiplatform
 - Android BLE APIs / iOS CoreBluetooth (platform-specific via expect/actual)
 - KMP ViewModel for state management
-- kotlinx.serialization for JSON parsing
 - kotlin.time.Clock (stdlib) for cross-platform time
+- snakeyaml-engine (build-time only) for company ID codegen
 
 ## Versioning
 
@@ -71,3 +79,4 @@ Android git tags follow the format: `android-v{versionName}-{versionCode}` (e.g.
 - Signal strength color-coded: green (near) → red (far)
 - BLE scanning abstracted via `BleScanner` interface with platform implementations
 - `PlatformContext` expect/actual for dependency injection (Android Context / empty on others)
+- `CompanyDatabase` is generated at build time from `scripts/company_identifiers.yaml` (Bluetooth SIG source) — do not edit the generated file directly

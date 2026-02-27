@@ -20,6 +20,14 @@ BLE scanner for Android. Started as a way to help my wife find her Oura ring, th
 
 Requires Android 12+ (API 31).
 
+## Updating BLE company database
+
+The Bluetooth SIG company identifiers are checked in at `scripts/company_identifiers.yaml` and compiled into a Kotlin map at build time. To pull the latest from the Bluetooth SIG:
+
+```bash
+./gradlew updateCompanyIdentifiers
+```
+
 ## Tech
 
 Kotlin, Jetpack Compose, Material 3, Android BLE APIs.
