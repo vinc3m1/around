@@ -47,6 +47,7 @@ val generateCompanyDatabase by tasks.registering {
             code to name
         }
 
+        val maxCode = entries.maxOf { it.first }
         val chunkSize = 500
         val chunks = entries.chunked(chunkSize)
         val lines = buildString {
@@ -56,21 +57,24 @@ val generateCompanyDatabase by tasks.registering {
             appendLine("// Update source: ./gradlew updateCompanyIdentifiers")
             appendLine("// Regenerate:    ./gradlew :shared:generateCompanyDatabase")
             appendLine("object CompanyDatabase {")
-            // Split into chunks to avoid JVM 64KB method size limit
-            for ((i, chunk) in chunks.withIndex()) {
-                appendLine("    private fun chunk$i(): Map<Int, String> = mapOf(")
-                for ((code, name) in chunk) {
-                    val escaped = name.replace("\\", "\\\\").replace("\"", "\\\"")
-                    appendLine("        $code to \"$escaped\",")
-                }
-                appendLine("    )")
-                appendLine()
-            }
-            appendLine("    val companies: Map<Int, String> = buildMap(${entries.size}) {")
+            appendLine("    val companies: Array<String?> = arrayOfNulls(${maxCode + 1})")
+            appendLine()
+            appendLine("    init {")
             for (i in chunks.indices) {
-                appendLine("        putAll(chunk$i())")
+                appendLine("        init$i(companies)")
             }
             appendLine("    }")
+            appendLine()
+            // Split into chunks to avoid JVM 64KB method size limit
+            for ((i, chunk) in chunks.withIndex()) {
+                appendLine("    private fun init$i(a: Array<String?>) {")
+                for ((code, name) in chunk) {
+                    val escaped = name.replace("\\", "\\\\").replace("\"", "\\\"")
+                    appendLine("        a[$code] = \"$escaped\"")
+                }
+                appendLine("    }")
+                appendLine()
+            }
             appendLine("}")
             appendLine()
         }
@@ -79,7 +83,7 @@ val generateCompanyDatabase by tasks.registering {
         ).asFile
         outFile.parentFile.mkdirs()
         outFile.writeText(lines)
-        println("Generated ${outFile.absolutePath} with ${entries.size} entries in ${chunks.size} chunks")
+        println("Generated ${outFile.absolutePath} with ${entries.size} entries (array size ${maxCode + 1})")
     }
 }
 

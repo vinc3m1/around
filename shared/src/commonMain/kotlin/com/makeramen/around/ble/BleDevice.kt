@@ -175,7 +175,7 @@ data class BleDevice(
     fun getDisplayName(): String? = advertisedName ?: name
 
     fun getManufacturerName(): String? {
-        val names = manufacturerData.keys.mapNotNull { CompanyDatabase.companies[it] }
+        val names = manufacturerData.keys.mapNotNull { CompanyDatabase.companies.getOrNull(it) }
         return names.joinToString().ifEmpty { null }
     }
 
