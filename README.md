@@ -1,6 +1,6 @@
 # Around
 
-BLE scanner for Android. Started as a way to help my wife find her Oura ring, then turned into a general-purpose Bluetooth Low Energy device explorer.
+Kotlin Multiplatform BLE scanner. Started as a way to help my wife find her Oura ring, then turned into a general-purpose Bluetooth Low Energy device explorer. Targets Android, iOS, Desktop, and Web (WASM, experimental).
 
 ## What it does
 
@@ -14,11 +14,13 @@ BLE scanner for Android. Started as a way to help my wife find her Oura ring, th
 ## Building
 
 ```bash
-./gradlew assembleDebug
-./gradlew installDebug
+./gradlew :androidApp:assembleDebug       # Android APK (requires API 31+)
+./gradlew :androidApp:installDebug        # Install to connected device
+./gradlew :desktopApp:run                 # Run desktop app
+./gradlew :wasmJsApp:wasmJsBrowserDevelopmentRun  # Run web app (experimental)
 ```
 
-Requires Android 12+ (API 31).
+Web target requires Chrome with `chrome://flags/#enable-experimental-web-platform-features` enabled for BLE scanning via the Web Bluetooth `requestLEScan()` API. Web BLE support is experimental/WIP.
 
 ## Updating BLE company database
 
@@ -30,7 +32,7 @@ The Bluetooth SIG company identifiers are checked in at `scripts/company_identif
 
 ## Tech
 
-Kotlin, Jetpack Compose, Material 3, Android BLE APIs.
+Kotlin Multiplatform, Compose Multiplatform, Material 3, Android BLE APIs / iOS CoreBluetooth / Web Bluetooth (experimental).
 
 ## License
 

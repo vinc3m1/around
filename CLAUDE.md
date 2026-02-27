@@ -1,6 +1,6 @@
 # Around
 
-Kotlin Multiplatform app for finding Oura rings via BLE scanning. Targets Android, iOS, and Desktop.
+Kotlin Multiplatform app for finding Oura rings via BLE scanning. Targets Android, iOS, Desktop, and Web (WASM, experimental).
 
 ## Build
 
@@ -12,9 +12,13 @@ Kotlin Multiplatform app for finding Oura rings via BLE scanning. Targets Androi
 ./gradlew :androidApp:connectedAndroidTest  # Run instrumented tests
 ./gradlew :shared:linkDebugFrameworkIosArm64       # Build iOS framework (device)
 ./gradlew :shared:linkDebugFrameworkIosSimulatorArm64  # Build iOS framework (simulator)
+./gradlew :wasmJsApp:wasmJsBrowserDevelopmentRun       # Run web app (experimental)
+./gradlew :wasmJsApp:wasmJsBrowserDevelopmentWebpack   # Build web app bundle
 ```
 
 iOS app is built via Xcode — open `iosApp/iosApp.xcodeproj`.
+
+Web app requires Chrome with `chrome://flags/#enable-experimental-web-platform-features` for BLE scanning. Web BLE support is experimental/WIP — the UI renders but scanning may not work yet.
 
 ```bash
 ./gradlew updateCompanyIdentifiers              # Download latest Bluetooth SIG YAML
@@ -39,11 +43,13 @@ shared/src/
 ├── commonMain/composeResources/ # Shared resources (icon)
 ├── androidMain/                 # Android BLE scanner, dynamic theme
 ├── desktopMain/                 # Desktop stubs (no BLE)
-└── iosMain/                     # iOS stubs + MainViewController
+├── iosMain/                     # iOS stubs + MainViewController
+└── wasmJsMain/                  # Web Bluetooth scanner (experimental)
 
 androidApp/                      # Android app shell (permissions, Activity)
 desktopApp/                      # Desktop JVM entry point
 iosApp/                          # iOS SwiftUI entry point
+wasmJsApp/                       # Web WASM entry point (experimental)
 scripts/
 ├── company_identifiers.yaml     # Bluetooth SIG company IDs (source of truth)
 └── (codegen via Gradle task)    # generates CompanyDatabase.kt at build time
@@ -53,7 +59,7 @@ scripts/
 
 - Kotlin 2.3.10 + Compose Multiplatform 1.10.1 + AGP 9.0.1
 - Material 3 via Compose Multiplatform
-- Android BLE APIs / iOS CoreBluetooth (platform-specific via expect/actual)
+- Android BLE APIs / iOS CoreBluetooth / Web Bluetooth (platform-specific via expect/actual)
 - KMP ViewModel for state management
 - kotlin.time.Clock (stdlib) for cross-platform time
 - snakeyaml-engine (build-time only) for company ID codegen
