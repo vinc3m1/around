@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlin.math.exp
 
 private const val SORT_INTERVAL_MS = 5000L // 5 seconds
 
@@ -67,7 +68,18 @@ class BleViewModel(platformContext: PlatformContext) : ViewModel() {
             bleScanner.devices
                 .catch { /* Scan failed, flow will complete */ }
                 .collect { device ->
-                    deviceCache[device.address] = device
+                    val previous = deviceCache[device.address]
+                    val updatedDevice = if (previous != null) {
+                        val elapsed = (device.lastSeen - previous.smoothedTimestamp).coerceAtLeast(0)
+                        val alpha = 1.0 - exp(-elapsed / BleDevice.SMOOTHING_TAU_MS)
+                        device.copy(
+                            smoothedRssi = alpha * device.rssi + (1.0 - alpha) * previous.smoothedRssi,
+                            smoothedTimestamp = device.lastSeen
+                        )
+                    } else {
+                        device
+                    }
+                    deviceCache[updatedDevice.address] = updatedDevice
 
                     // Update data without reordering
                     updateDeviceList()

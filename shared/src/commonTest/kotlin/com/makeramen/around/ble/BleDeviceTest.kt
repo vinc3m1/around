@@ -1,5 +1,7 @@
 package com.makeramen.around.ble
 
+import kotlin.math.abs
+import kotlin.math.exp
 import kotlin.time.Clock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -371,6 +373,69 @@ class BleDeviceTest {
     @Test
     fun `SignalStrength - extreme low defaults to very far`() {
         assertEquals(SignalStrength.VERY_FAR, SignalStrength.fromRssi(-120))
+    }
+
+    // ========== Smoothed RSSI (Time-Decayed EMA) ==========
+
+    @Test
+    fun `smoothedRssi - defaults to raw rssi`() {
+        val device = device(rssi = -60)
+        assertEquals(-60.0, device.smoothedRssi)
+    }
+
+    @Test
+    fun `smoothedSignalStrength - uses smoothedRssi not raw rssi`() {
+        val device = BleDevice(
+            name = null,
+            address = "00:11:22:33:44:55",
+            rssi = -90, // VERY_FAR
+            smoothedRssi = -45.0, // VERY_CLOSE
+            lastSeen = 1000L,
+            smoothedTimestamp = 1000L
+        )
+        assertEquals(SignalStrength.VERY_CLOSE, device.smoothedSignalStrength())
+    }
+
+    @Test
+    fun `time-decayed EMA - dense samples barely move smoothed value`() {
+        // Simulate dense advertising: 100ms gaps, jumping from -40 to -90
+        var smoothed = -40.0
+        var timestamp = 0L
+
+        // 10 rapid samples at -90, each 100ms apart
+        for (i in 1..10) {
+            timestamp += 100L
+            val elapsed = 100L
+            val alpha = 1.0 - exp(-elapsed / BleDevice.SMOOTHING_TAU_MS)
+            smoothed = alpha * -90 + (1.0 - alpha) * smoothed
+        }
+
+        // After 1 second of dense -90 readings, smoothed should still be much closer to -40 than -90
+        assertTrue(smoothed > -60.0, "Expected smoothed ($smoothed) > -60 after dense samples")
+    }
+
+    @Test
+    fun `time-decayed EMA - long gap resets to new value`() {
+        // Start at -40, then a 10-second gap with a new reading at -90
+        val smoothed = -40.0
+        val elapsed = 10_000L
+        val alpha = 1.0 - exp(-elapsed / BleDevice.SMOOTHING_TAU_MS)
+        val result = alpha * -90 + (1.0 - alpha) * smoothed
+
+        // After 10 seconds, alpha ≈ 0.96, so result should be very close to -90
+        assertTrue(result < -87.0, "Expected smoothed ($result) < -87 after 10s gap")
+    }
+
+    @Test
+    fun `time-decayed EMA - 3s gap gives roughly equal weight`() {
+        // At TAU = 3000ms, a 3s gap gives alpha ≈ 0.632
+        val smoothed = -40.0
+        val elapsed = 3000L
+        val alpha = 1.0 - exp(-elapsed / BleDevice.SMOOTHING_TAU_MS)
+        val result = alpha * -90 + (1.0 - alpha) * smoothed
+
+        // alpha ≈ 0.632, so result ≈ 0.632 * -90 + 0.368 * -40 ≈ -71.6
+        assertTrue(result in -75.0..-68.0, "Expected smoothed ($result) in [-75, -68] for 3s gap")
     }
 
     // ========== Test Helpers ==========
