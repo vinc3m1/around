@@ -69,15 +69,28 @@ class BleViewModel(platformContext: PlatformContext) : ViewModel() {
                 .catch { /* Scan failed, flow will complete */ }
                 .collect { device ->
                     val previous = deviceCache[device.address]
+                    val hasValidRssi = device.rssi != Int.MIN_VALUE
                     val updatedDevice = if (previous != null) {
-                        val elapsed = (device.lastSeen - previous.smoothedTimestamp).coerceAtLeast(0)
-                        val alpha = 1.0 - exp(-elapsed / BleDevice.SMOOTHING_TAU_MS)
-                        device.copy(
-                            smoothedRssi = alpha * device.rssi + (1.0 - alpha) * previous.smoothedRssi,
-                            smoothedTimestamp = device.lastSeen
-                        )
-                    } else {
+                        if (hasValidRssi) {
+                            val elapsed = (device.lastSeen - previous.smoothedTimestamp).coerceAtLeast(0)
+                            val alpha = 1.0 - exp(-elapsed / BleDevice.SMOOTHING_TAU_MS)
+                            device.copy(
+                                smoothedRssi = alpha * device.rssi + (1.0 - alpha) * previous.smoothedRssi,
+                                smoothedTimestamp = device.lastSeen
+                            )
+                        } else {
+                            // Invalid RSSI — keep previous smoothed values, update other fields
+                            device.copy(
+                                rssi = previous.rssi,
+                                smoothedRssi = previous.smoothedRssi,
+                                smoothedTimestamp = previous.smoothedTimestamp
+                            )
+                        }
+                    } else if (hasValidRssi) {
                         device
+                    } else {
+                        // First sighting with no valid RSSI — skip entirely
+                        return@collect
                     }
                     deviceCache[updatedDevice.address] = updatedDevice
 
