@@ -90,7 +90,7 @@ val generateCompanyDatabase by tasks.registering {
 kotlin {
     androidLibrary {
         namespace = "com.makeramen.around.shared"
-        compileSdk = 36
+        compileSdk = 37
         minSdk = 31
         androidResources.enable = true
     }

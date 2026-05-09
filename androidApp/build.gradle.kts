@@ -6,13 +6,13 @@ plugins {
 android {
     namespace = "com.makeramen.around"
     compileSdk {
-        version = release(36)
+        version = release(37)
     }
 
     defaultConfig {
         applicationId = "com.makeramen.around"
         minSdk = 31
-        targetSdk = 36
+        targetSdk = 37
         versionCode = 3
         versionName = "1.0.2"
 
