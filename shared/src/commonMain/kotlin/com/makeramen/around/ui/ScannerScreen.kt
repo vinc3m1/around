@@ -112,7 +112,9 @@ fun ScannerScreenContent(
                     val refreshRotation = remember { Animatable(0f) }
                     val scope = rememberCoroutineScope()
                     TooltipBox(
-                        positionProvider = TooltipDefaults.rememberPlainTooltipPositionProvider(),
+                        positionProvider = TooltipDefaults.rememberTooltipPositionProvider(
+                            TooltipAnchorPosition.Above
+                        ),
                         tooltip = { PlainTooltip { Text("Clear device list") } },
                         state = rememberTooltipState()
                     ) {

@@ -88,6 +88,10 @@ val generateCompanyDatabase by tasks.registering {
 }
 
 kotlin {
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
+    }
+
     androidLibrary {
         namespace = "com.makeramen.around.shared"
         compileSdk = 37
