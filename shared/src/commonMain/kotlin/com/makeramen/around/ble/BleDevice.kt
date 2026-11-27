@@ -98,8 +98,17 @@ data class BleDevice(
     val advertisedName: String? = null,
     val manufacturerData: Map<Int, ByteArray> = emptyMap(),
     val serviceUuids: List<String> = emptyList(),
-    val lastSeen: Long = Clock.System.now().toEpochMilliseconds()
+    val lastSeen: Long = Clock.System.now().toEpochMilliseconds(),
+    val smoothedRssi: Double = rssi.toDouble(),
+    val smoothedTimestamp: Long = lastSeen
 ) {
+    fun smoothedSignalStrength(): SignalStrength =
+        SignalStrength.fromRssi(smoothedRssi.toInt())
+
+    companion object {
+        const val SMOOTHING_TAU_MS = 3000.0
+    }
+
     fun isLikelyOura(): Boolean {
         if (address.startsWith(OURA_MAC_PREFIX, ignoreCase = true)) return true
         if (manufacturerData.keys.any { it in OURA_MANUFACTURER_IDS }) return true

@@ -384,7 +384,7 @@ fun OuraDeviceCard(device: BleDevice, displayName: String, modifier: Modifier = 
     val now = rememberStaleNow()
     val stale = staleFraction(device.lastSeen, now)
 
-    val signalStrength = SignalStrength.fromRssi(device.rssi)
+    val signalStrength = device.smoothedSignalStrength()
     val transition = updateTransition(targetState = signalStrength, label = "signal_strength")
     val animatedColor by transition.animateColor(label = "color") { it.color }
 
@@ -474,7 +474,7 @@ fun CompactDeviceCard(device: BleDevice, displayName: String, modifier: Modifier
     val now = rememberStaleNow()
     val stale = staleFraction(device.lastSeen, now)
 
-    val signalStrength = SignalStrength.fromRssi(device.rssi)
+    val signalStrength = device.smoothedSignalStrength()
     val transition = updateTransition(targetState = signalStrength, label = "signal_strength")
     val animatedColor by transition.animateColor(label = "color") { it.color }
     val manufacturerName = device.getManufacturerName()
@@ -544,7 +544,7 @@ fun UnnamedDeviceCard(device: BleDevice, detectedType: String? = null, modifier:
     val now = rememberStaleNow()
     val stale = staleFraction(device.lastSeen, now)
 
-    val signalStrength = SignalStrength.fromRssi(device.rssi)
+    val signalStrength = device.smoothedSignalStrength()
     val transition = updateTransition(targetState = signalStrength, label = "signal_strength")
     val animatedColor by transition.animateColor(label = "color") { it.color }
     val manufacturerName = device.getManufacturerName()
