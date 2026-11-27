@@ -1,39 +1,47 @@
 # Around
 
-Kotlin Multiplatform BLE scanner. Started as a way to help my wife find her Oura ring, then turned into a general-purpose Bluetooth Low Energy device explorer. Targets Android, iOS, Desktop, and Web (WASM, experimental).
+Around is a Kotlin Multiplatform Bluetooth Low Energy (BLE) scanner for finding nearby devices, originally built to find a lost Oura ring. It sorts devices by signal strength and recognizes some Oura, Apple, and Google devices from their advertisements. Android and iOS use the platform Bluetooth APIs. Desktop and experimental Web builds are also available.
 
-## What it does
+## Android
 
-- Scans for nearby BLE devices and sorts them by signal strength (color-coded green → red)
-- Prioritizes Oura rings at the top (identified by MAC prefix, manufacturer ID, or advertised name)
-- Detects Apple devices via Continuity protocol (AirTags, AirPods, iPhones, etc.)
-- Detects Google/Android ecosystem devices (Fast Pair, Find My Device Network)
-- Groups devices into named, Apple, Google, and unnamed sections
-- Shows RSSI, manufacturer info, and relative last-seen timestamps
+- Install [Temurin JDK 17](https://adoptium.net/temurin/releases/?version=17) and point Android Studio’s Gradle JDK (or your shell’s `JAVA_HOME`) to it.
+- Open the repository root in Android Studio. In SDK Manager, install [Android SDK Platform 37](https://developer.android.com/about/versions/17/setup-sdk) and Android SDK Platform-Tools. A shell build needs the SDK configured through `ANDROID_HOME` or Android Studio’s generated `local.properties`.
+- Use an Android 12 (API 31) or newer phone with BLE to test scanning. Enable USB debugging for a Gradle install, turn on Bluetooth, and accept the Nearby devices permission when prompted.
 
-## Building
+From the repository root:
 
-```bash
-./gradlew :androidApp:assembleDebug       # Android APK (requires API 31+)
-./gradlew :androidApp:installDebug        # Install to connected device
-./gradlew :desktopApp:run                 # Run desktop app
-./gradlew :wasmJsApp:wasmJsBrowserDevelopmentRun  # Run web app (experimental)
+```sh
+./gradlew :androidApp:assembleDebug
+./gradlew :androidApp:installDebug          # With a device connected
+./gradlew :androidApp:connectedAndroidTest  # Instrumented tests on a device or emulator
 ```
 
-Web target requires Chrome with `chrome://flags/#enable-experimental-web-platform-features` enabled for BLE scanning via the Web Bluetooth `requestLEScan()` API. Web BLE support is experimental/WIP.
+The debug APK is written under `androidApp/build/outputs/apk/debug/`. It does not need a production signing key.
 
-## Updating BLE company database
+## iOS
 
-The Bluetooth SIG company identifiers are checked in at `scripts/company_identifiers.yaml` and compiled into a Kotlin map at build time. To pull the latest from the Bluetooth SIG:
+1. On a Mac, install Xcode, the iOS platform support, and Temurin JDK 17. The app’s deployment target is **iOS 17.2**.
+2. Open `iosApp/iosApp.xcodeproj` and select the `iosApp` scheme. To install on your iPhone, select your own Team under **Signing & Capabilities** and use a unique bundle identifier if needed.
+3. Select your device and choose **Run**. Turn on Bluetooth and allow access when prompted. Use a physical iPhone to verify BLE scanning; a simulator build only verifies the build and UI.
 
-```bash
-./gradlew updateCompanyIdentifiers
+The existing Xcode build phase calls `:shared:embedAndSignAppleFrameworkForXcode`. No separate framework build or CocoaPods setup is needed. If Xcode cannot locate Java, set `JAVA_HOME` for the build phase to your JDK 17 installation. See [Kotlin’s Xcode integration guide](https://kotlinlang.org/docs/multiplatform/multiplatform-direct-integration.html) for troubleshooting.
+
+## Desktop, web, and CI
+
+```sh
+./gradlew :desktopApp:run
+./gradlew :shared:desktopTest
+./gradlew :wasmJsApp:wasmJsBrowserDevelopmentRun
 ```
 
-## Tech
+Web BLE scanning is experimental and depends on Chrome support for `requestLEScan()`; the project uses Chrome’s experimental web-platform features flag.
 
-Kotlin Multiplatform, Compose Multiplatform, Material 3, Android BLE APIs / iOS CoreBluetooth / Web Bluetooth (experimental).
+[GitHub Actions](.github/workflows/android.yml) runs `./gradlew build` and `./gradlew test` on GitHub-hosted Ubuntu for pushes to `main` and pull requests targeting it. The workflow does not run iOS/Xcode or connected Android tests, sign releases, or publish artifacts.
+
+## Bluetooth company identifiers
+
+The build generates a manufacturer-name lookup from `scripts/company_identifiers.yaml`. This file comes from the [Bluetooth SIG Assigned Numbers repository](https://www.bluetooth.com/specifications/assigned-numbers/) and is separate from Around’s source license. Review the [Bluetooth SIG terms](https://www.bluetooth.com/terms-of-use/third-party-service-terms/) before redistributing it or a build that embeds it.
 
 ## License
 
-[GPLv3](LICENSE)
+Around’s own code is licensed under [GPLv3](LICENSE). Third-party components and data remain subject to their own terms.
