@@ -21,7 +21,6 @@ iOS app is built via Xcode — open `iosApp/iosApp.xcodeproj`.
 Web app requires Chrome with `chrome://flags/#enable-experimental-web-platform-features` for BLE scanning. Web BLE support is experimental/WIP — the UI renders but scanning may not work yet.
 
 ```bash
-./gradlew updateCompanyIdentifiers              # Download latest Bluetooth SIG YAML
 ./gradlew :shared:generateCompanyDatabase       # Regenerate CompanyDatabase.kt (runs automatically during build)
 ```
 
@@ -51,7 +50,7 @@ desktopApp/                      # Desktop JVM entry point
 iosApp/                          # iOS SwiftUI entry point
 wasmJsApp/                       # Web WASM entry point (experimental)
 scripts/
-├── company_identifiers.yaml     # Bluetooth SIG company IDs (source of truth)
+├── company_ids.json     # company IDs, Nordic Bluetooth Numbers Database
 └── (codegen via Gradle task)    # generates CompanyDatabase.kt at build time
 ```
 
@@ -62,7 +61,7 @@ scripts/
 - Android BLE APIs / iOS CoreBluetooth / Web Bluetooth (platform-specific via expect/actual)
 - KMP ViewModel for state management
 - kotlin.time.Clock (stdlib) for cross-platform time
-- snakeyaml-engine (build-time only) for company ID codegen
+- Gradle’s bundled JSON parser for company ID codegen
 
 ## Versioning
 
@@ -85,4 +84,4 @@ Android git tags follow the format: `android-v{versionName}-{versionCode}` (e.g.
 - Signal strength color-coded: green (near) → red (far)
 - BLE scanning abstracted via `BleScanner` interface with platform implementations
 - `PlatformContext` expect/actual for dependency injection (Android Context / empty on others)
-- `CompanyDatabase` is generated at build time from `scripts/company_identifiers.yaml` (Bluetooth SIG source) — do not edit the generated file directly
+- `CompanyDatabase` is generated at build time from `scripts/company_ids.json` (Nordic Bluetooth Numbers Database) — do not edit the generated file directly

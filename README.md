@@ -40,7 +40,7 @@ Web BLE scanning is experimental and depends on Chrome support for `requestLESca
 
 ## Bluetooth company identifiers
 
-The build generates a manufacturer-name lookup from `scripts/company_identifiers.yaml`. This file comes from the [Bluetooth SIG Assigned Numbers repository](https://www.bluetooth.com/specifications/assigned-numbers/) and is separate from Around’s source license. Review the [Bluetooth SIG terms](https://www.bluetooth.com/terms-of-use/third-party-service-terms/) before redistributing it or a build that embeds it.
+The build generates the offline manufacturer-name lookup from `scripts/company_ids.json`, pinned to [Nordic Semiconductor's Bluetooth Numbers Database](https://github.com/nordicsemi/bluetooth-numbers-database/blob/5c795f597125b7be0d5033fb648e9b6f5e09d9c9/v1/company_ids.json). The data has a [separate Nordic license](LICENSES/Nordic-Bluetooth-Numbers.txt). Include that notice with redistributed source or in accompanying materials for binaries. No network fetch is needed to generate the lookup.
 
 ## License
 
